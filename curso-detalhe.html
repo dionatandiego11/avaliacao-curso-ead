@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes do Curso: [Nome do Curso] - Avaliação Curso EAD</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Estilos específicos para a página de detalhes do curso */
+        .course-detail-header {
+            background-color: #f8f9fa;
+            padding: 30px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .course-detail-header .university-logo {
+            max-width: 150px;
+            max-height: 70px;
+            margin-bottom: 15px;
+        }
+        .course-detail-header h1 {
+            color: #EF5350;
+            font-size: 2.4em;
+            margin-bottom: 5px;
+        }
+        .course-detail-header .university-name {
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        .course-detail-header .overall-rating {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #f39c12;
+            margin-bottom: 5px;
+        }
+        .course-detail-header .overall-rating .stars i { margin-right: 2px; }
+        .course-detail-header .total-reviews {
+            font-size: 1em;
+            color: #777;
+        }
+        .course-detail-header .btn-evaluate-this {
+            background-color: #EF5350;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 15px;
+            transition: background-color 0.3s ease;
+        }
+        .course-detail-header .btn-evaluate-this:hover {
+            background-color: #d84315;
+        }
+
+        .course-content-section {
+            padding: 30px 0;
+        }
+        .course-tabs {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #dee2e6;
+            display: flex;
+        }
+        .course-tabs li {
+            margin-right: 5px;
+        }
+        .course-tabs li a {
+            display: block;
+            padding: 10px 20px;
+            text-decoration: none;
+            color: #555;
+            font-weight: 600;
+            border-radius: 5px 5px 0 0;
+            border: 1px solid transparent;
+            border-bottom: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .course-tabs li a.active, .course-tabs li a:hover {
+            color: #EF5350;
+            background-color: #fff;
+            border-color: #dee2e6 #dee2e6 #fff; /* Simula a aba por cima da borda */
+            position: relative;
+            bottom: -2px; /* Alinha com a borda inferior */
+        }
+
+        .tab-content {
+            /* Conteúdo da aba será mostrado aqui */
+        }
+        .tab-pane { display: none; } /* Esconde todas por padrão */
+        .tab-pane.active { display: block; } /* Mostra a ativa */
+
+        .criteria-ratings {
+            margin-bottom: 30px;
+        }
+        .criteria-ratings h3 {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .criterion {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .criterion:last-child { border-bottom: none; }
+        .criterion .name { font-weight: 500; color: #444; }
+        .criterion .stars-display { color: #f39c12; }
+        .criterion .score { font-weight: bold; color: #333; }
+
+        .student-comments h3 {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .comment-card {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .comment-card .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 10px;
+        }
+        .comment-card .comment-author { font-weight: bold; color: #EF5350; }
+        .comment-card .comment-date { font-size: 0.85em; color: #888; }
+        .comment-card .comment-rating { color: #f39c12; }
+        .comment-card .comment-text {
+            color: #555;
+            line-height: 1.7;
+        }
+        .comment-card .recommendation-status {
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .comment-card .recommendation-status.yes { color: #27ae60; font-weight: bold; }
+        .comment-card .recommendation-status.no { color: #c0392b; font-weight: bold; }
+
+        /* Placeholder para gráficos */
+        .charts-placeholder {
+            background-color: #e9ecef;
+            padding: 50px;
+            text-align: center;
+            border-radius: 6px;
+            color: #6c757d;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div class="container">
+            <div class="logo-area">
+                <a href="index.html" class="logo">
+                    <span class="logo-part logo-part1">AVALIAÇÃO</span>
+                    <span class="logo-part logo-part2">CURSO EAD</span>
+                </a>
+                <span class="tagline">Ajudando estudantes a tomar decisões</span>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li>
+                        <a href="avaliar-curso.html"><i class="fas fa-pencil-alt"></i> Avaliar um Curso</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="course-detail-header">
+            <div class="container">
+                <nav aria-label="breadcrumb" style="margin-bottom: 15px;">
+                    <ol class="breadcrumb" style="background:none; padding:0; margin:0;">
+                        <li class="breadcrumb-item"><a href="index.html">Início</a></li>
+                        <li class="breadcrumb-item"><a href="cursos.html">Cursos</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Análise e Des. de Sistemas</li> <!-- Nome do curso dinâmico -->
+                    </ol>
+                </nav>
+
+                <!-- <img src="img/logo-uninter.png" alt="Logo UNINTER" class="university-logo"> <!-- Logo da universidade (placeholder) -->
+                <h1>Análise e Desenvolvimento de Sistemas</h1>
+                <p class="university-name">UNINTER - Centro Universitário Internacional</p>
+                
+                <div class="overall-rating">
+                    <span class="stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                    </span>
+                    4.8
+                </div>
+                <p class="total-reviews">(Baseado em 112 avaliações)</p>
+                <a href="avaliar-curso.html?cursoId=1" class="btn-evaluate-this"><i class="fas fa-pencil-alt"></i> Avaliar este Curso</a>
+            </div>
+        </section>
+
+        <section class="course-content-section">
+            <div class="container">
+                <ul class="course-tabs" id="courseTab" role="tablist">
+                    <li><a class="active" id="overview-tab" data-tab="overview" href="#overview">Visão Geral</a></li>
+                    <li><a id="ratings-tab" data-tab="ratings" href="#ratings">Avaliações Detalhadas</a></li>
+                    <li><a id="comments-tab" data-tab="comments" href="#comments">Comentários de Alunos</a></li>
+                    <li><a id="about-tab" data-tab="about" href="#about">Sobre o Curso</a></li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+                        <h3>Visão Geral das Avaliações</h3>
+                        <div class="charts-placeholder">
+                            <i class="fas fa-chart-bar fa-3x"></i>
+                            <p>Gráficos com médias e evolução histórica aparecerão aqui.</p>
+                        </div>
+                        <p>Informações gerais sobre a satisfação dos alunos, pontos fortes e fracos de forma resumida.</p>
+                    </div>
+
+                    <div class="tab-pane" id="ratings" role="tabpanel" aria-labelledby="ratings-tab">
+                        <div class="criteria-ratings">
+                            <h3>Notas por Critério</h3>
+                            <div class="criterion">
+                                <span class="name">Qualidade do conteúdo do curso</span>
+                                <span class="stars-display"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></span>
+                                <span class="score">4.7 / 5</span>
+                            </div>
+                            <div class="criterion">
+                                <span class="name">Qualidade do corpo docente</span>
+                                <span class="stars-display"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></span>
+                                <span class="score">4.5 / 5</span>
+                            </div>
+                            <div class="criterion">
+                                <span class="name">Sistema de apoio ao aluno</span>
+                                <span class="stars-display"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i></span>
+                                <span class="score">4.2 / 5</span>
+                            </div>
+                            <div class="criterion">
+                                <span class="name">Material didático</span>
+                                <span class="stars-display"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></span>
+                                <span class="score">4.9 / 5</span>
+                            </div>
+                            <!-- Adicionar mais critérios -->
+                            <div class="criterion">
+                                <span class="name">Relação custo-benefício</span>
+                                <span class="stars-display"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></span>
+                                <span class="score">4.6 / 5</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane" id="comments" role="tabpanel" aria-labelledby="comments-tab">
+                        <div class="student-comments">
+                            <h3>O que os Alunos Dizem</h3>
+                            <div class="comment-card">
+                                <div class="comment-header">
+                                    <div>
+                                        <span class="comment-author">Ana P. Silva</span> - <span class="comment-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i> 5.0</span>
+                                    </div>
+                                    <span class="comment-date">15 de Julho, 2023</span>
+                                </div>
+                                <p class="comment-text">
+                                    "O curso superou minhas expectativas! O material é excelente e os professores são muito atenciosos. A plataforma AVA é intuitiva e fácil de usar. Recomendo muito para quem quer entrar na área de TI."
+                                </p>
+                                <p class="recommendation-status yes"><i class="fas fa-check-circle"></i> Recomendaria o curso</p>
+                            </div>
+                            <div class="comment-card">
+                                <div class="comment-header">
+                                    <div>
+                                        <span class="comment-author">Carlos B. Santos</span> - <span class="comment-rating"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i> 3.5</span>
+                                    </div>
+                                    <span class="comment-date">10 de Julho, 2023</span>
+                                </div>
+                                <p class="comment-text">
+                                    "O conteúdo é bom, mas senti falta de mais atividades práticas e feedback individualizado. O suporte ao aluno poderia ser mais ágil em alguns momentos. No geral, é um bom curso, mas com espaço para melhorias."
+                                </p>
+                                <p class="recommendation-status no"><i class="fas fa-times-circle"></i> Não recomendaria o curso</p>
+                            </div>
+                            <!-- Adicionar mais comentários -->
+                            <div style="text-align: center; margin-top: 20px;">
+                                <a href="#" class="btn-submit" style="display:inline-block; width:auto; background-color: #555;">Carregar Mais Comentários</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane" id="about" role="tabpanel" aria-labelledby="about-tab">
+                        <h3>Sobre o Curso</h3>
+                        <p><strong>Nome do Curso:</strong> Análise e Desenvolvimento de Sistemas</p>
+                        <p><strong>Instituição:</strong> UNINTER - Centro Universitário Internacional</p>
+                        <p><strong>Modalidade:</strong> 100% EAD</p>
+                        <p><strong>Grau:</strong> Tecnólogo</p>
+                        <p><strong>Duração Padrão:</strong> 2.5 anos (5 semestres)</p>
+                        <p><strong>Descrição:</strong> O curso de Tecnólogo em Análise e Desenvolvimento de Sistemas EAD forma profissionais capazes de analisar, projetar, documentar, especificar, testar, implantar e manter sistemas computacionais de informação...</p>
+                        <p><a href="https://www.uninter.com/graduacao-ead/analise-e-desenvolvimento-de-sistemas/" target="_blank" rel="noopener noreferrer">Visitar site oficial do curso <i class="fas fa-external-link-alt"></i></a></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>© 2023 Avaliação Curso EAD. Todos os direitos reservados.</p>
+            <p><a href="#">Termos de Uso</a> | <a href="#">Política de Privacidade</a></p>
+        </div>
+    </footer>
+
+    <script>
+        // Script simples para funcionalidade das abas
+        const tabs = document.querySelectorAll('.course-tabs li a');
+        const panes = document.querySelectorAll('.tab-pane');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function(event) {
+                event.preventDefault();
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                panes.forEach(pane => pane.classList.remove('active'));
+                const activePaneId = this.getAttribute('data-tab');
+                document.getElementById(activePaneId).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

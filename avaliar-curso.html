@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaliar Curso - Avaliação Curso EAD</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="main-header">
+        <div class="container">
+            <div class="logo-area">
+                <a href="index.html" class="logo">
+                    <span class="logo-part logo-part1">AVALIAÇÃO</span>
+                    <span class="logo-part logo-part2">CURSO EAD</span>
+                </a>
+                <span class="tagline">Ajudando estudantes a tomar decisões</span>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li>
+                        <a href="avaliar-curso.html"><i class="fas fa-pencil-alt"></i> Avaliar um Curso</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <div class="container">
+                <h1>Avalie seu Curso EAD</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="index.html">Início</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Avaliar Curso</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+
+        <div class="container">
+            <section class="form-section">
+                <h2>Conte-nos sobre sua experiência!</h2>
+                <p style="text-align: center; margin-bottom: 20px; color: #666;">Sua opinião é muito importante para ajudar outros estudantes.</p>
+                <form id="reviewForm">
+                    <fieldset>
+                        <legend style="font-size: 1.2em; font-weight: bold; margin-bottom:15px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;">Seus Dados (Verificados)</legend>
+                        <div class="form-group">
+                            <label for="alunoNome">Nome Completo</label>
+                            <input type="text" id="alunoNome" name="alunoNome" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="alunoRA">R.A. (Registro Acadêmico)</label>
+                            <input type="text" id="alunoRA" name="alunoRA" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="alunoEmail">E-mail Institucional (para verificação)</label>
+                            <input type="email" id="alunoEmail" name="alunoEmail" required>
+                        </div>
+                    </fieldset>
+
+                    <fieldset style="margin-top:30px;">
+                        <legend style="font-size: 1.2em; font-weight: bold; margin-bottom:15px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;">Sobre o Curso</legend>
+                        <div class="form-group">
+                            <label for="universidade">Universidade</label>
+                            <select id="universidade" name="universidade" required>
+                                <option value="">Selecione a Universidade</option>
+                                <option value="uninter">UNINTER</option>
+                                <option value="cruzeirodosul">Cruzeiro do Sul Virtual</option>
+                                <option value="estacio">Estácio</option>
+                                <option value="anhanguera">Anhanguera EAD</option>
+                                <option value="unopar">UNOPAR</option>
+                                <!-- Adicionar mais opções -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="curso">Curso</label>
+                            <select id="curso" name="curso" required>
+                                <option value="">Selecione o Curso (após escolher a universidade)</option>
+                                <!-- Opções de curso seriam carregadas dinamicamente -->
+                                <option value="ads">Análise e Desenvolvimento de Sistemas</option>
+                                <option value="pedagogia">Pedagogia</option>
+                                <option value="gestao_rh">Gestão de RH</option>
+                            </select>
+                        </div>
+                         <div class="form-group">
+                            <label for="periodo">Período/Semestre Atual</label>
+                            <input type="number" id="periodo" name="periodo" min="1" max="12" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dataInicio">Data de Início do Curso</label>
+                            <input type="date" id="dataInicio" name="dataInicio" required>
+                        </div>
+                    </fieldset>
+
+                    <fieldset style="margin-top:30px;">
+                        <legend style="font-size: 1.2em; font-weight: bold; margin-bottom:15px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;">Sua Avaliação (1 a 5 estrelas)</legend>
+
+                        <div class="form-group">
+                            <label>Qualidade do conteúdo do curso</label>
+                            <div class="star-rating">
+                                <input type="radio" id="qualidadeConteudo-5" name="qualidadeConteudo" value="5"><label for="qualidadeConteudo-5" title="5 estrelas">★</label>
+                                <input type="radio" id="qualidadeConteudo-4" name="qualidadeConteudo" value="4"><label for="qualidadeConteudo-4" title="4 estrelas">★</label>
+                                <input type="radio" id="qualidadeConteudo-3" name="qualidadeConteudo" value="3"><label for="qualidadeConteudo-3" title="3 estrelas">★</label>
+                                <input type="radio" id="qualidadeConteudo-2" name="qualidadeConteudo" value="2"><label for="qualidadeConteudo-2" title="2 estrelas">★</label>
+                                <input type="radio" id="qualidadeConteudo-1" name="qualidadeConteudo" value="1" required><label for="qualidadeConteudo-1" title="1 estrela">★</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Qualidade do corpo docente</label>
+                            <div class="star-rating">
+                                <input type="radio" id="corpoDocente-5" name="corpoDocente" value="5"><label for="corpoDocente-5">★</label>
+                                <input type="radio" id="corpoDocente-4" name="corpoDocente" value="4"><label for="corpoDocente-4">★</label>
+                                <input type="radio" id="corpoDocente-3" name="corpoDocente" value="3"><label for="corpoDocente-3">★</label>
+                                <input type="radio" id="corpoDocente-2" name="corpoDocente" value="2"><label for="corpoDocente-2">★</label>
+                                <input type="radio" id="corpoDocente-1" name="corpoDocente" value="1" required><label for="corpoDocente-1">★</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Sistema de apoio ao aluno</label>
+                             <div class="star-rating">
+                                <input type="radio" id="apoioAluno-5" name="apoioAluno" value="5"><label for="apoioAluno-5">★</label>
+                                <input type="radio" id="apoioAluno-4" name="apoioAluno" value="4"><label for="apoioAluno-4">★</label>
+                                <input type="radio" id="apoioAluno-3" name="apoioAluno" value="3"><label for="apoioAluno-3">★</label>
+                                <input type="radio" id="apoioAluno-2" name="apoioAluno" value="2"><label for="apoioAluno-2">★</label>
+                                <input type="radio" id="apoioAluno-1" name="apoioAluno" value="1" required><label for="apoioAluno-1">★</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Material didático</label>
+                             <div class="star-rating">
+                                <input type="radio" id="materialDidatico-5" name="materialDidatico" value="5"><label for="materialDidatico-5">★</label>
+                                <input type="radio" id="materialDidatico-4" name="materialDidatico" value="4"><label for="materialDidatico-4">★</label>
+                                <input type="radio" id="materialDidatico-3" name="materialDidatico" value="3"><label for="materialDidatico-3">★</label>
+                                <input type="radio" id="materialDidatico-2" name="materialDidatico" value="2"><label for="materialDidatico-2">★</label>
+                                <input type="radio" id="materialDidatico-1" name="materialDidatico" value="1" required><label for="materialDidatico-1">★</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Plataforma de ensino (AVAs)</label>
+                             <div class="star-rating">
+                                <input type="radio" id="plataformaAva-5" name="plataformaAva" value="5"><label for="plataformaAva-5">★</label>
+                                <input type="radio" id="plataformaAva-4" name="plataformaAva" value="4"><label for="plataformaAva-4">★</label>
+                                <input type="radio" id="plataformaAva-3" name="plataformaAva" value="3"><label for="plataformaAva-3">★</label>
+                                <input type="radio" id="plataformaAva-2" name="plataformaAva" value="2"><label for="plataformaAva-2">★</label>
+                                <input type="radio" id="plataformaAva-1" name="plataformaAva" value="1" required><label for="plataformaAva-1">★</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Processos de avaliação</label>
+                             <div class="star-rating">
+                                <input type="radio" id="processosAvaliacao-5" name="processosAvaliacao" value="5"><label for="processosAvaliacao-5">★</label>
+                                <input type="radio" id="processosAvaliacao-4" name="processosAvaliacao" value="4"><label for="processosAvaliacao-4">★</label>
+                                <input type="radio" id="processosAvaliacao-3" name="processosAvaliacao" value="3"><label for="processosAvaliacao-3">★</label>
+                                <input type="radio" id="processosAvaliacao-2" name="processosAvaliacao" value="2"><label for="processosAvaliacao-2">★</label>
+                                <input type="radio" id="processosAvaliacao-1" name="processosAvaliacao" value="1" required><label for="processosAvaliacao-1">★</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Comunicação institucional</label>
+                             <div class="star-rating">
+                                <input type="radio" id="comunicacaoInst-5" name="comunicacaoInst" value="5"><label for="comunicacaoInst-5">★</label>
+                                <input type="radio" id="comunicacaoInst-4" name="comunicacaoInst" value="4"><label for="comunicacaoInst-4">★</label>
+                                <input type="radio" id="comunicacaoInst-3" name="comunicacaoInst" value="3"><label for="comunicacaoInst-3">★</label>
+                                <input type="radio" id="comunicacaoInst-2" name="comunicacaoInst" value="2"><label for="comunicacaoInst-2">★</label>
+                                <input type="radio" id="comunicacaoInst-1" name="comunicacaoInst" value="1" required><label for="comunicacaoInst-1">★</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Cumprimento do programa proposto</label>
+                             <div class="star-rating">
+                                <input type="radio" id="cumprimentoPrograma-5" name="cumprimentoPrograma" value="5"><label for="cumprimentoPrograma-5">★</label>
+                                <input type="radio" id="cumprimentoPrograma-4" name="cumprimentoPrograma" value="4"><label for="cumprimentoPrograma-4">★</label>
+                                <input type="radio" id="cumprimentoPrograma-3" name="cumprimentoPrograma" value="3"><label for="cumprimentoPrograma-3">★</label>
+                                <input type="radio" id="cumprimentoPrograma-2" name="cumprimentoPrograma" value="2"><label for="cumprimentoPrograma-2">★</label>
+                                <input type="radio" id="cumprimentoPrograma-1" name="cumprimentoPrograma" value="1" required><label for="cumprimentoPrograma-1">★</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Relação custo-benefício</label>
+                             <div class="star-rating">
+                                <input type="radio" id="custoBeneficio-5" name="custoBeneficio" value="5"><label for="custoBeneficio-5">★</label>
+                                <input type="radio" id="custoBeneficio-4" name="custoBeneficio" value="4"><label for="custoBeneficio-4">★</label>
+                                <input type="radio" id="custoBeneficio-3" name="custoBeneficio" value="3"><label for="custoBeneficio-3">★</label>
+                                <input type="radio" id="custoBeneficio-2" name="custoBeneficio" value="2"><label for="custoBeneficio-2">★</label>
+                                <input type="radio" id="custoBeneficio-1" name="custoBeneficio" value="1" required><label for="custoBeneficio-1">★</label>
+                            </div>
+                        </div>
+
+                    </fieldset>
+
+                     <fieldset style="margin-top:30px;">
+                        <legend style="font-size: 1.2em; font-weight: bold; margin-bottom:15px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;">Comentários Adicionais</legend>
+                        <div class="form-group">
+                            <label for="comentarioGeral">Comentário Geral (até 500 caracteres)</label>
+                            <textarea id="comentarioGeral" name="comentarioGeral" maxlength="500"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Você recomendaria este curso?</label> <!-- Label principal -->
+                            <div class="radio-group">
+                                <div class="radio-option-item"> <!-- Nova div container -->
+                                    <input type="radio" id="recomendaSim" name="recomendaCurso" value="sim" required>
+                                    <label for="recomendaSim">Sim</label>
+                                </div>
+                                <div class="radio-option-item"> <!-- Nova div container -->
+                                    <input type="radio" id="recomendaNao" name="recomendaCurso" value="nao">
+                                    <label for="recomendaNao">Não</label>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <button type="submit" class="btn-submit">Enviar Avaliação</button>
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>© 2023 Avaliação Curso EAD. Todos os direitos reservados.</p>
+            <p><a href="#">Termos de Uso</a> | <a href="#">Política de Privacidade</a></p>
+        </div>
+    </footer>
+</body>
+</html>
