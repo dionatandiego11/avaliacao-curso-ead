@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avaliar Curso EAD</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    input[type="range"]::-webkit-slider-thumb {
+      background-color: #dc2626;
+    }
+    input[type="range"]::-moz-range-thumb {
+      background-color: #dc2626;
+    }
+    input[type="range"]::-ms-thumb {
+      background-color: #dc2626;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans">
+
+  <header class="bg-red-600 text-white">
+    <div class="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+      <div class="text-xl font-bold">REAVALIE<span class="text-yellow-300">EAD</span></div>
+      <nav class="space-x-6 hidden md:block">
+        <a href="/" class="hover:underline">Início</a>
+        <a href="#" class="hover:underline">Artigos</a>
+        <a href="#" class="hover:underline">Entrar</a>
+        <a href="#" class="bg-white text-red-600 px-4 py-2 rounded hover:bg-gray-100 font-semibold">Para Instituições</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-6 py-10 bg-white shadow mt-8 rounded-lg">
+    <h1 class="text-3xl font-bold text-red-600 mb-6 text-center">Avalie seu Curso EAD</h1>
+
+    <form method="POST" action="/api/avaliar" class="space-y-6">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">R.A. (Registro Acadêmico)</label>
+          <input name="ra" type="text" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2" placeholder="Ex: 1234567" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Instituição de Ensino</label>
+          <select name="instituicao_id" required class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2">
+            <option value="">Selecione</option>
+            {{instituicoes}}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Nome do Curso</label>
+          <select name="curso_id" required class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2">
+            <option value="">Selecione</option>
+            {{cursos}}
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-8">
+        <h2 class="text-lg font-semibold text-gray-800 mb-2">Avaliação por critérios</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="block text-sm">Qualidade do conteúdo</label><input name="conteudo" type="range" min="1" max="5" class="w-full accent-red-600" value="3" /></div>
+          <div><label class="block text-sm">Competência dos professores</label><input name="professores" type="range" min="1" max="5" class="w-full accent-red-600" value="3" /></div>
+          <div><label class="block text-sm">Apoio ao estudante</label><input name="apoio" type="range" min="1" max="5" class="w-full accent-red-600" value="3" /></div>
+          <div><label class="block text-sm">Estrutura e funcionamento do polo</label><input name="estrutura" type="range" min="1" max="5" class="w-full accent-red-600" value="3" /></div>
+          <div><label class="block text-sm">Material didático</label><input name="material" type="range" min="1" max="5" class="w-full accent-red-600" value="3" /></div>
+          <div><label class="block text-sm">Experiência com o app e aulas</label><input name="experiencia" type="range" min="1" max="5" class="w-full accent-red-600" value="3" /></div>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Você recomenda esse curso?</label>
+        <div class="flex items-center space-x-6">
+          <label><input type="radio" name="recomenda" value="Sim" required class="mr-2" /> Sim</label>
+          <label><input type="radio" name="recomenda" value="Não" required class="mr-2" /> Não</label>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Comentário adicional (opcional)</label>
+        <textarea name="comentario" rows="4" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2" placeholder="Deixe seu comentário sobre o curso..."></textarea>
+      </div>
+
+      <div class="text-center">
+        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-md shadow">
+          Enviar Avaliação
+        </button>
+      </div>
+    </form>
+  </main>
+
+</body>
+</html>
+
+

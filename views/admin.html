@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel Administrativo - ReavalieEAD</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <div class="max-w-5xl mx-auto py-10 px-6">
+    <h1 class="text-3xl font-bold text-red-600 mb-8 text-center">Painel Administrativo</h1>
+
+    <section class="mb-10">
+      {{admin_message_placeholder}}
+    </section>
+
+    <section class="mb-10 bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-semibold mb-4">📊 Estatísticas Gerais</h2>
+      <ul class="space-y-2 text-gray-800">
+        <li><strong>Total de avaliações:</strong> {{total_avaliacoes}}</li>
+        <li><strong>Média geral de conteúdo:</strong> {{media_conteudo}}</li>
+        <li><strong>Média geral de professores:</strong> {{media_professores}}</li>
+        <li><strong>% de recomendações:</strong> {{percent_recomenda}}%</li>
+      </ul>
+    </section>
+
+    <section class="mb-10 bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-semibold mb-4">🏫 Adicionar Instituição</h2>
+      <form method="POST" action="/admin/instituicao" class="flex gap-4">
+        <input name="nome" type="text" placeholder="Nome da Instituição" required
+               class="flex-1 px-4 py-2 border border-gray-300 rounded-md">
+        <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700">Adicionar</button>
+      </form>
+    </section>
+
+    <section class="mb-10 bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-semibold mb-4">📘 Adicionar Curso</h2>
+      <form method="POST" action="/admin/curso" class="flex gap-4">
+        <input name="nome" type="text" placeholder="Nome do Curso" required
+               class="flex-1 px-4 py-2 border border-gray-300 rounded-md">
+        <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700">Adicionar</button>
+      </form>
+    </section>
+
+    <section class="mb-10 bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-semibold mb-4">⭐ Avaliações Recentes</h2>
+      <div>
+        {{avaliacoes_recentes_placeholder}}
+      </div>
+    </section>
+
+    <section class="mb-10 bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-semibold mb-4">✏️ Gerenciar Instituições</h2>
+      <form method="POST" action="/admin/gerenciar-instituicao" class="flex flex-col gap-4">
+        <select name="instituicao_id" class="px-4 py-2 border border-gray-300 rounded-md">
+          <option value="">Selecione uma Instituição</option>
+          {{instituicoes_options_placeholder}}
+        </select>
+        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">Ver Detalhes</button>
+      </form>
+    </section>
+
+    <section class="mb-10 bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-semibold mb-4">📚 Gerenciar Cursos</h2>
+      <form method="POST" action="/admin/gerenciar-curso" class="flex flex-col gap-4">
+        <select name="curso_id" class="px-4 py-2 border border-gray-300 rounded-md">
+          <option value="">Selecione um Curso</option>
+          {{cursos_options_placeholder}}
+        </select>
+        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">Ver Detalhes</button>
+      </form>
+    </section>
+
+  </div>
+</body>
+</html>
