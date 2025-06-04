@@ -26,19 +26,39 @@
 
     <section class="mb-10 bg-white p-6 rounded shadow">
       <h2 class="text-xl font-semibold mb-4">🏫 Adicionar Instituição</h2>
-      <form method="POST" action="/admin/instituicao" class="flex gap-4">
-        <input name="nome" type="text" placeholder="Nome da Instituição" required
-               class="flex-1 px-4 py-2 border border-gray-300 rounded-md">
-        <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700">Adicionar</button>
+      <form method="POST" action="/admin/instituicao" class="space-y-4">
+        <div>
+          <label for="instituicaoNome" class="sr-only">Nome da Instituição</label>
+          <input name="nome" id="instituicaoNome" type="text" placeholder="Nome da Instituição" required
+                 class="w-full px-4 py-2 border border-gray-300 rounded-md">
+        </div>
+        <div>
+          <label for="instituicaoTipo" class="sr-only">Tipo de Instituição</label>
+          <select id="instituicaoTipo" name="tipo" required class="w-full px-4 py-2 border border-gray-300 rounded-md">
+            <option value="">Selecione o Tipo</option>
+            <option value="publica">Pública</option>
+            <option value="privada">Privada</option>
+          </select>
+        </div>
+        <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 w-full">Adicionar Instituição</button>
       </form>
     </section>
 
     <section class="mb-10 bg-white p-6 rounded shadow">
       <h2 class="text-xl font-semibold mb-4">📘 Adicionar Curso</h2>
-      <form method="POST" action="/admin/curso" class="flex gap-4">
-        <input name="nome" type="text" placeholder="Nome do Curso" required
-               class="flex-1 px-4 py-2 border border-gray-300 rounded-md">
-        <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700">Adicionar</button>
+      <form method="POST" action="/admin/curso" class="space-y-4">
+        <div>
+          <label for="cursoNome" class="sr-only">Nome do Curso</label>
+          <input name="nome" id="cursoNome" type="text" placeholder="Nome do Curso" required
+                 class="w-full px-4 py-2 border border-gray-300 rounded-md">
+        </div>
+        <div>
+          <label for="cursoInstituicao" class="sr-only">Instituição</label>
+          <select id="cursoInstituicao" name="instituicao_id" required class="w-full px-4 py-2 border border-gray-300 rounded-md">
+            {{instituicoes_options_placeholder}}
+          </select>
+        </div>
+        <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 w-full">Adicionar Curso</button>
       </form>
     </section>
 
