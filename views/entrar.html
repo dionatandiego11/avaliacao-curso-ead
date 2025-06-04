@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrar - ReavalieEAD</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <header class="bg-red-600 text-white shadow">
+    <div class="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+      <div class="text-xl font-bold">REAVALIE<span class="text-yellow-300">EAD</span></div>
+      <nav class="space-x-6 hidden md:block">
+        <a href="/" class="hover:underline">Início</a>
+        <a href="/artigos" class="hover:underline">Artigos</a>
+        <a href="/entrar" class="hover:underline font-semibold">Entrar</a>
+        <a href="/avaliar" class="hover:underline">Avaliar Curso</a>
+        <a href="/para-instituicoes" class="hover:underline">Para Instituições</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-6 py-10">
+    <div class="grid md:grid-cols-2 gap-10">
+
+      <!-- Seção de Login -->
+      <div class="bg-white p-8 rounded-lg shadow">
+        <h2 class="text-2xl font-bold text-red-600 mb-6">Entrar</h2>
+        <form id="loginForm" class="space-y-4">
+          <div>
+            <label for="loginRa" class="block text-sm font-medium text-gray-700">R.A. (Registro Acadêmico)</label>
+            <input type="text" id="loginRa" name="ra" required class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:ring-red-500 focus:border-red-500">
+          </div>
+          <div>
+            <label for="loginSenha" class="block text-sm font-medium text-gray-700">Senha</label>
+            <input type="password" id="loginSenha" name="senha" required class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:ring-red-500 focus:border-red-500">
+          </div>
+          <div>
+            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-md shadow">Entrar</button>
+          </div>
+          <div id="loginMessage" class="text-sm text-center"></div>
+        </form>
+      </div>
+
+      <!-- Seção de Criar Conta -->
+      <div class="bg-white p-8 rounded-lg shadow">
+        <h2 class="text-2xl font-bold text-red-600 mb-6">Criar Conta</h2>
+        <form id="registerForm" class="space-y-4">
+          <div>
+            <label for="regNome" class="block text-sm font-medium text-gray-700">Nome Completo</label>
+            <input type="text" id="regNome" name="nome" required class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:ring-red-500 focus:border-red-500">
+          </div>
+          <div>
+            <label for="regRa" class="block text-sm font-medium text-gray-700">R.A. (Registro Acadêmico)</label>
+            <input type="text" id="regRa" name="ra" required class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:ring-red-500 focus:border-red-500">
+          </div>
+          <div>
+            <label for="regSenha" class="block text-sm font-medium text-gray-700">Senha</label>
+            <input type="password" id="regSenha" name="senha" required class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:ring-red-500 focus:border-red-500">
+          </div>
+          <div>
+            <label for="regUniversidade" class="block text-sm font-medium text-gray-700">Universidade</label>
+            <input type="text" id="regUniversidade" name="universidade" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:ring-red-500 focus:border-red-500">
+          </div>
+          <div>
+            <label for="regCurso" class="block text-sm font-medium text-gray-700">Curso</label>
+            <input type="text" id="regCurso" name="curso" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:ring-red-500 focus:border-red-500">
+          </div>
+          <div>
+            <label for="regPolo" class="block text-sm font-medium text-gray-700">Polo</label>
+            <input type="text" id="regPolo" name="polo" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:ring-red-500 focus:border-red-500">
+          </div>
+          <div>
+            <label for="regCidade" class="block text-sm font-medium text-gray-700">Cidade</label>
+            <input type="text" id="regCidade" name="cidade" class="mt-1 block w-full border border-gray-300 rounded-md px-4 py-2 shadow-sm focus:ring-red-500 focus:border-red-500">
+          </div>
+          <div>
+            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-md shadow">Criar Conta</button>
+          </div>
+          <div id="registerMessage" class="text-sm text-center"></div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center text-sm text-gray-500 mt-12 py-6">
+    © 2025 ReavalieEAD. Todos os direitos reservados.
+  </footer>
+
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const loginMessage = document.getElementById('loginMessage');
+    const registerForm = document.getElementById('registerForm');
+    const registerMessage = document.getElementById('registerMessage');
+
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      loginMessage.textContent = '';
+      const formData = new FormData(loginForm);
+      const data = Object.fromEntries(formData.entries());
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const result = await response.json();
+        if (response.ok) {
+          loginMessage.textContent = 'Login bem-sucedido! Redirecionando...';
+          loginMessage.className = 'text-sm text-center text-green-600';
+          window.location.href = '/'; // Redirect to home page
+        } else {
+          loginMessage.textContent = result.message || 'Erro ao fazer login.';
+          loginMessage.className = 'text-sm text-center text-red-600';
+        }
+      } catch (error) {
+        loginMessage.textContent = 'Erro de conexão. Tente novamente.';
+        loginMessage.className = 'text-sm text-center text-red-600';
+      }
+    });
+
+    registerForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      registerMessage.textContent = '';
+      const formData = new FormData(registerForm);
+      const data = Object.fromEntries(formData.entries());
+
+      try {
+        const response = await fetch('/api/registrar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const result = await response.json();
+        if (response.ok) {
+          registerMessage.textContent = 'Conta criada com sucesso! Redirecionando...';
+          registerMessage.className = 'text-sm text-center text-green-600';
+          window.location.href = '/'; // Redirect to home page
+        } else {
+          registerMessage.textContent = result.message || 'Erro ao criar conta.';
+          registerMessage.className = 'text-sm text-center text-red-600';
+        }
+      } catch (error) {
+        registerMessage.textContent = 'Erro de conexão. Tente novamente.';
+        registerMessage.className = 'text-sm text-center text-red-600';
+      }
+    });
+  </script>
+
+</body>
+</html>
