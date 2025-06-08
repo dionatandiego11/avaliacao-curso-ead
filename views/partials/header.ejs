@@ -1,0 +1,83 @@
+<!-- views/partials/header.ejs -->
+<header class="bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg">
+  <div class="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+    <div class="text-2xl font-bold">
+      REAVALIE<span class="text-yellow-300">EAD</span>
+    </div>
+    <nav class="space-x-6 hidden md:flex items-center">
+      <a href="/" class="hover:text-yellow-300 transition-colors">Início</a>
+      <a href="#" class="hover:text-yellow-300 transition-colors">Artigos</a>
+      <a href="/my-evaluations" class="hover:text-yellow-300 transition-colors">Minhas Avaliações</a>
+
+      <% if (username) { %>
+        <span class="text-yellow-300 font-semibold">
+          Olá, <%= username.split('@')[0] %>!
+        </span> <!-- Exibe apenas a parte antes do @ -->
+        <a href="/avaliar" class="bg-white text-red-600 px-4 py-2 rounded-lg hover:bg-gray-100 font-semibold transition-colors">
+          Avaliar Curso
+        </a>
+        <a href="/logout" class="bg-white text-red-600 px-4 py-2 rounded-lg hover:bg-gray-100 font-semibold transition-colors">
+          Sair
+        </a>
+      <% } else { %>
+        <a href="/login" class="hover:text-yellow-300 transition-colors">Login</a>
+        <a href="/register" class="bg-white text-red-600 px-4 py-2 rounded-lg hover:bg-gray-100 font-semibold transition-colors">
+          Registrar
+        </a>
+      <% } %>
+
+      <a href="/admin/login" class="hover:text-yellow-300 transition-colors">Admin</a>
+      <a href="#" class="border border-white text-white px-4 py-2 rounded-lg hover:bg-white/10 font-semibold transition-colors">
+        Para Instituições
+      </a>
+    </nav>
+
+    <!-- Mobile menu button -->
+    <button class="md:hidden p-2 rounded-md text-white hover:text-yellow-300 hover:bg-red-700 transition-colors" onclick="toggleMobileMenu()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        class="lucide lucide-menu">
+        <line x1="4" x2="20" y1="12" y2="12"></line>
+        <line x1="4" x2="20" y1="6" y2="6"></line>
+        <line x1="4" x2="20" y1="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile Navigation -->
+  <div id="mobile-menu" class="lg:hidden hidden pb-4 bg-red-700 shadow">
+    <div class="space-y-2 px-6 py-2">
+      <a href="/" class="block px-4 py-2 text-white hover:bg-red-600 rounded-md">Início</a>
+      <a href="#" class="block px-4 py-2 text-white hover:bg-red-600 rounded-md">Artigos</a>
+      <a href="/my-evaluations" class="block px-4 py-2 text-white hover:bg-red-600 rounded-md">Minhas Avaliações</a>
+
+      <% if (username) { %>
+        <span class="block px-4 py-2 text-yellow-300 font-bold">
+          Olá, <%= username.split('@')[0] %>!
+        </span>
+        <a href="/avaliar" class="block px-4 py-2 bg-white text-red-600 rounded-md text-center font-semibold">
+          Avaliar Curso
+        </a>
+        <a href="/logout" class="block px-4 py-2 bg-white text-red-600 rounded-md text-center font-semibold">
+          Sair
+        </a>
+      <% } else { %>
+        <a href="/login" class="block px-4 py-2 text-white hover:bg-red-600 rounded-md">Login</a>
+        <a href="/register" class="block px-4 py-2 text-white hover:bg-red-600 rounded-md">Registrar</a>
+      <% } %>
+
+      <a href="/admin/login" class="block px-4 py-2 text-white hover:bg-red-600 rounded-md">Admin</a>
+      <a href="#" class="block px-4 py-2 border border-white text-white rounded-md text-center font-semibold">
+        Para Instituições
+      </a>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Simple mobile menu toggle for the partial
+  function toggleMobileMenu() {
+    const menu = document.getElementById('mobile-menu');
+    menu.classList.toggle('hidden');
+  }
+</script>

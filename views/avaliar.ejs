@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof evaluationToEdit !== 'undefined' && evaluationToEdit ? 'Editar Avaliação' : 'Avaliar Curso EAD' %> - REAVALIE EAD</title>
+  
+  <!-- Scripts e Links -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js"></script>
+  <link rel="stylesheet" href="/css/style.css"> <%# Link para o CSS externo %>
+  
+  <!-- Estilos Internos -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .range-slider {
+      appearance: none;
+      height: 8px;
+      border-radius: 5px;
+      background: linear-gradient(to right, #ef4444 0%, #f59e0b 25%, #eab308 50%, #84cc16 75%, #22c55e 100%);
+      outline: none;
+    }
+
+    .range-slider::-webkit-slider-thumb {
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid #dc2626;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s ease;
+    }
+
+    .range-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .range-slider::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid #dc2626;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .evaluation-card {
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+
+    .evaluation-card:hover {
+      border-color: #dc2626;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .rating-emoji {
+      font-size: 2rem;
+      transition: all 0.2s ease;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .tooltip {
+      position: relative;
+    }
+
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .tooltip-text {
+      visibility: hidden;
+      opacity: 0;
+      width: 280px;
+      background-color: #1f2937;
+      color: white;
+      text-align: center;
+      border-radius: 8px;
+      padding: 12px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -140px;
+      transition: all 0.3s;
+      font-size: 14px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .recommendation-btn {
+      transition: all 0.3s ease;
+    }
+
+    .recommendation-btn.selected {
+      transform: scale(1.05);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .recommendation-btn.selected.yes {
+      border-color: #22c55e;
+      background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    }
+
+    .recommendation-btn.selected.no {
+      border-color: #ef4444;
+      background: linear-gradient(135deg, #fef2f2, #fecaca);
+    }
+
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #dc2626;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="bg-white p-8 rounded-lg shadow-lg text-center">
+      <div class="spinner mx-auto mb-4"></div>
+      <p class="text-gray-600">Enviando sua avaliação...</p>
+    </div>
+  </div>
+
+  <%- include('partials/header', { username: username }) %>
+
+  <main class="max-w-6xl mx-auto px-6 py-8">
+
+    <!-- Mensagem Dinâmica (Sucesso/Erro) -->
+    <% if (message) { %>
+      <div class="bg-<%= isError ? 'red' : 'green' %>-100 border-l-4 border-<%= isError ? 'red' : 'green' %>-400 text-<%= isError ? 'red' : 'green' %>-800 p-6 rounded-lg mb-8 fade-in" role="alert">
+        <div class="flex items-center">
+          <i data-feather="<%= isError ? 'x-circle' : 'check-circle' %>" class="w-6 h-6 mr-3 text-<%= isError ? 'red' : 'green' %>-600"></i>
+          <div>
+            <p class="font-semibold text-lg"><%= isError ? 'Erro!' : 'Sucesso!' %></p>
+            <p><%= message %></p>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Card Principal -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+
+      <!-- Cabeçalho do Card -->
+      <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-8 text-center">
+        <h1 class="text-4xl font-bold mb-2 main-evaluation-h1"><%= typeof evaluationToEdit !== 'undefined' && evaluationToEdit ? 'Edite sua Avaliação' : 'Avalie seu Curso EAD' %></h1>
+        <p class="text-red-100 text-lg">Sua opinião ajuda outros estudantes a fazer a melhor escolha</p>
+      </div>
+
+      <!-- Card de Informações do Usuário -->
+      <div class="p-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+        <div class="flex items-start justify-between">
+          <div>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
+              <i data-feather="user" class="w-6 h-6 mr-2 text-blue-600"></i>
+              Informações do seu Registro
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div class="bg-white p-4 rounded-lg shadow-sm">
+                <p class="text-sm text-gray-500 uppercase tracking-wide">RA</p>
+                <p class="text-xl font-semibold text-gray-800"><%= ra || 'Não Informado' %></p>
+              </div>
+              <div class="bg-white p-4 rounded-lg shadow-sm">
+                <p class="text-sm text-gray-500 uppercase tracking-wide">Instituição</p>
+                <p class="text-xl font-semibold text-gray-800"><%= instituicao_nome %></p>
+              </div>
+              <div class="bg-white p-4 rounded-lg shadow-sm">
+                <p class="text-sm text-gray-500 uppercase tracking-wide">Curso</p>
+                <p class="text-xl font-semibold text-gray-800"><%= curso_nome %></p>
+              </div>
+            </div>
+          </div>
+          <div class="hidden md:block">
+            <i data-feather="shield" class="w-16 h-16 text-blue-600 opacity-20"></i>
+          </div>
+        </div>
+        <div class="mt-4 p-4 bg-blue-100 rounded-lg">
+          <p class="text-sm text-blue-800">
+            <i data-feather="info" class="w-4 h-4 inline mr-1"></i>
+            Esta avaliação será vinculada automaticamente a esta instituição e curso do seu perfil.
+          </p>
+        </div>
+      </div>
+
+      <!-- Formulário de Avaliação -->
+      <form id="evaluationForm" class="p-8 space-y-8" data-evaluation-id="<%= typeof evaluationToEdit !== 'undefined' && evaluationToEdit ? evaluationToEdit.id : '' %>">
+
+        <!-- Critérios de Avaliação -->
+        <div>
+          <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+            <i data-feather="star" class="w-6 h-6 mr-2 text-yellow-500"></i>
+            Avaliação por Critérios
+          </h2>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Qualidade do Conteúdo -->
+            <div class="evaluation-card bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center tooltip">
+                  <i data-feather="book-open" class="w-5 h-5 mr-2 text-blue-600"></i>
+                  <label class="font-semibold text-gray-700">Qualidade do Conteúdo</label>
+                  <i data-feather="help-circle" class="w-4 h-4 ml-2 text-gray-400 cursor-help"></i>
+                  <span class="tooltip-text">Avalie a qualidade, atualização e relevância do material didático, clareza das explicações e organização do conteúdo</span>
+                </div>
+                <div class="flex items-center">
+                  <span id="conteudoEmoji" class="rating-emoji mr-2">😐</span>
+                  <span id="conteudoValue" class="text-2xl font-bold text-red-600">3</span>
+                </div>
+              </div>
+              <input id="conteudo" name="conteudo" type="range" min="1" max="5" value="<%= typeof evaluationToEdit !== 'undefined' && evaluationToEdit ? evaluationToEdit.conteudo : '3' %>" class="range-slider w-full" />
+              <div class="flex justify-between text-sm text-gray-500 mt-2">
+                <span>Péssimo</span>
+                <span>Excelente</span>
+              </div>
+            </div>
+
+            <!-- Competência dos Professores -->
+            <div class="evaluation-card bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center tooltip">
+                  <i data-feather="users" class="w-5 h-5 mr-2 text-green-600"></i>
+                  <label class="font-semibold text-gray-700">Competência dos Professores</label>
+                  <i data-feather="help-circle" class="w-4 h-4 ml-2 text-gray-400 cursor-help"></i>
+                  <span class="tooltip-text">Avalie o conhecimento, didática, disponibilidade e qualidade do feedback dos professores</span>
+                </div>
+                <div class="flex items-center">
+                  <span id="professoresEmoji" class="rating-emoji mr-2">😐</span>
+                  <span id="professoresValue" class="text-2xl font-bold text-red-600">3</span>
+                </div>
+              </div>
+              <input id="professores" name="professores" type="range" min="1" max="5" value="<%= typeof evaluationToEdit !== 'undefined' && evaluationToEdit ? evaluationToEdit.professores : '3' %>" class="range-slider w-full" />
+              <div class="flex justify-between text-sm text-gray-500 mt-2">
+                <span>Péssimo</span>
+                <span>Excelente</span>
+              </div>
+            </div>
+
+            <!-- Apoio ao Estudante -->
+            <div class="evaluation-card bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center tooltip">
+                  <i data-feather="headphones" class="w-5 h-5 mr-2 text-purple-600"></i>
+                  <label class="font-semibold text-gray-700">Apoio ao Estudante</label>
+                  <i data-feather="help-circle" class="w-4 h-4 ml-2 text-gray-400 cursor-help"></i>
+                  <span class="tooltip-text">Avalie a qualidade do suporte técnico, secretaria acadêmica, tutoria e orientação oferecida aos estudantes</span>
+                </div>
+                <div class="flex items-center">
+                  <span id="apoioEmoji" class="rating-emoji mr-2">😐</span>
+                  <span id="apoioValue" class="text-2xl font-bold text-red-600">3</span>
+                </div>
+              </div>
+              <input id="apoio" name="apoio" type="range" min="1" max="5" value="<%= typeof evaluationToEdit !== 'undefined' && evaluationToEdit ? evaluationToEdit.apoio : '3' %>" class="range-slider w-full" />
+              <div class="flex justify-between text-sm text-gray-500 mt-2">
+                <span>Péssimo</span>
+                <span>Excelente</span>
+              </div>
+            </div>
+
+            <!-- Estrutura do Polo -->
+            <div class="evaluation-card bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center tooltip">
+                  <i data-feather="home" class="w-5 h-5 mr-2 text-orange-600"></i>
+                  <label class="font-semibold text-gray-700">Estrutura do Polo</label>
+                  <i data-feather="help-circle" class="w-4 h-4 ml-2 text-gray-400 cursor-help"></i>
+                  <span class="tooltip-text">Avalie as instalações físicas, laboratórios, biblioteca, equipamentos e infraestrutura do polo presencial</span>
+                </div>
+                <div class="flex items-center">
+                  <span id="estruturaEmoji" class="rating-emoji mr-2">😐</span>
+                  <span id="estruturaValue" class="text-2xl font-bold text-red-600">3</span>
+                </div>
+              </div>
+              <input id="estrutura" name="estrutura" type="range" min="1" max="5" value="<%= typeof evaluationToEdit !== 'undefined' && evaluationToEdit ? evaluationToEdit.estrutura : '3' %>" class="range-slider w-full" />
+              <div class="flex justify-between text-sm text-gray-500 mt-2">
+                <span>Péssimo</span>
+                <span>Excelente</span>
+              </div>
+            </div>
+
+            <!-- Material Didático -->
+            <div class="evaluation-card bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center tooltip">
+                  <i data-feather="file-text" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                  <label class="font-semibold text-gray-700">Material Didático</label>
+                  <i data-feather="help-circle" class="w-4 h-4 ml-2 text-gray-400 cursor-help"></i>
+                  <span class="tooltip-text">Avalie a qualidade dos livros, apostilas, vídeos e outros recursos de aprendizagem fornecidos</span>
+                </div>
+                <div class="flex items-center">
+                  <span id="materialEmoji" class="rating-emoji mr-2">😐</span>
+                  <span id="materialValue" class="text-2xl font-bold text-red-600">3</span>
+                </div>
+              </div>
+              <input id="material" name="material" type="range" min="1" max="5" value="<%= typeof evaluationToEdit !== 'undefined' && evaluationToEdit ? evaluationToEdit.material : '3' %>" class="range-slider w-full" />
+              <div class="flex justify-between text-sm text-gray-500 mt-2">
+                <span>Péssimo</span>
+                <span>Excelente</span>
+              </div>
+            </div>
+
+            <!-- Experiência com Plataforma -->
+            <div class="evaluation-card bg-gradient-to-br from-gray-50 to-white p-6 rounded-xl shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center tooltip">
+                  <i data-feather="monitor" class="w-5 h-5 mr-2 text-teal-600"></i>
+                  <label class="font-semibold text-gray-700">Plataforma e Aulas</label>
+                  <i data-feather="help-circle" class="w-4 h-4 ml-2 text-gray-400 cursor-help"></i>
+                  <span class="tooltip-text">Avalie a usabilidade da plataforma de ensino, qualidade dos vídeos e facilidade de navegação</span>
+                </div>
+                <div class="flex items-center">
+                  <span id="experienciaEmoji" class="rating-emoji mr-2">😐</span>
+                  <span id="experienciaValue" class="text-2xl font-bold text-red-600">3</span>
+                </div>
+              </div>
+              <input id="experiencia" name="experiencia" type="range" min="1" max="5" value="<%= typeof evaluationToEdit !== 'undefined' && evaluationToEdit ? evaluationToEdit.experiencia : '3' %>" class="range-slider w-full" />
+              <div class="flex justify-between text-sm text-gray-500 mt-2">
+                <span>Péssimo</span>
+                <span>Excelente</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Avaliação Geral -->
+        <div class="bg-gradient-to-r from-red-50 to-pink-50 p-6 rounded-xl border border-red-100">
+          <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+            <i data-feather="award" class="w-5 h-5 mr-2 text-red-600"></i>
+            Avaliação Geral
+          </h3>
+          <div class="flex items-center justify-center space-x-4">
+            <span class="text-lg text-gray-600">Sua nota geral:</span>
+            <div id="overallRating" class="text-4xl font-bold text-red-600">3.0</div>
+            <div id="overallEmoji" class="text-4xl">😐</div>
+          </div>
+        </div>
+
+        <!-- Seção de Recomendação -->
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
+          <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+            <i data-feather="thumbs-up" class="w-5 h-5 mr-2 text-green-600"></i>
+            Recomendação
+          </h3>
+          <div class="text-center">
+            <p class="text-lg text-gray-700 mb-6">Você indicaria este curso para outros estudantes?</p>
+            <div class="flex justify-center space-x-4">
+              <label class="recommendation-option cursor-pointer">
+                <input type="radio" name="indicacao" value="sim" class="sr-only" <% if (typeof evaluationToEdit !== 'undefined' && evaluationToEdit && evaluationToEdit.indicacao) { %>checked<% } %>>
+                <div id="recommendYes" class="recommendation-btn bg-white border-2 border-gray-300 px-8 py-4 rounded-xl transition-all duration-200 flex items-center space-x-3 hover:border-green-500 <% if (typeof evaluationToEdit !== 'undefined' && evaluationToEdit && evaluationToEdit.indicacao) { %>selected yes<% } %>">
+                  <i data-feather="thumbs-up" class="w-6 h-6 text-green-600"></i>
+                  <div class="text-left">
+                    <div class="font-semibold text-gray-800">Sim, recomendo!</div>
+                    <div class="text-sm text-gray-600">Vale a pena fazer</div>
+                  </div>
+                </div>
+              </label>
+              <label class="recommendation-option cursor-pointer">
+                <input type="radio" name="indicacao" value="nao" class="sr-only" <% if (typeof evaluationToEdit !== 'undefined' && evaluationToEdit && !evaluationToEdit.indicacao) { %>checked<% } %>>
+                <div id="recommendNo" class="recommendation-btn bg-white border-2 border-gray-300 px-8 py-4 rounded-xl transition-all duration-200 flex items-center space-x-3 hover:border-red-500 <% if (typeof evaluationToEdit !== 'undefined' && evaluationToEdit && !evaluationToEdit.indicacao) { %>selected no<% } %>">
+                  <i data-feather="thumbs-down" class="w-6 h-6 text-red-600"></i>
+                  <div class="text-left">
+                    <div class="font-semibold text-gray-800">Não recomendo</div>
+                    <div class="text-sm text-gray-600">Não vale a pena</div>
+                  </div>
+                </div>
+              </label>
+            </div>
+            <div id="recommendationFeedback" class="mt-4 p-3 rounded-lg <% if (typeof evaluationToEdit === 'undefined' || !evaluationToEdit) { %>hidden<% } else if (evaluationToEdit.indicacao) { %>bg-green-100 border border-green-200<% } else { %>bg-red-100 border border-red-200<% } %>">
+              <% if (typeof evaluationToEdit !== 'undefined' && evaluationToEdit) { %>
+                <p class="font-medium text-<%= evaluationToEdit.indicacao ? 'green' : 'red' %>-800">
+                  <%= evaluationToEdit.indicacao ? '✨ Ótimo! Sua recomendação ajudará outros estudantes!' : '📝 Obrigado pelo feedback! Isso ajudará a melhorar a qualidade do ensino.' %>
+                </p>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seção de Comentário -->
+        <div class="bg-gray-50 p-6 rounded-xl">
+          <label for="comentario" class="block text-lg font-semibold text-gray-700 mb-3 flex items-center">
+            <i data-feather="message-square" class="w-5 h-5 mr-2 text-blue-600"></i>
+            Comentário Adicional
+          </label>
+          <textarea id="comentario" name="comentario" rows="4" class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:border-red-500 focus:outline-none transition-colors resize-none" placeholder="Compartilhe sua experiência detalhada, dicas para futuros alunos ou sugestões de melhoria..."><%= typeof evaluationToEdit !== 'undefined' && evaluationToEdit ? evaluationToEdit.comentario : '' %></textarea>
+          <div class="flex justify-between items-center mt-2">
+            <span class="text-sm text-gray-500">Opcional • Máximo 500 caracteres</span>
+            <span id="charCount" class="text-sm text-gray-400">0/500</span>
+          </div>
+        </div>
+
+        <!-- Seção de Prévia -->
+        <div id="previewSection" class="bg-blue-50 p-6 rounded-xl border-2 border-blue-200" style="display: none;">
+          <h3 class="text-xl font-semibold text-blue-800 mb-4 flex items-center">
+            <i data-feather="eye" class="w-5 h-5 mr-2"></i>
+            Prévia da sua Avaliação
+          </h3>
+          <div id="previewContent" class="space-y-2"></div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="flex flex-col sm:flex-row gap-4 pt-6">
+          <button type="button" id="previewBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center">
+            <i data-feather="eye" class="w-5 h-5 mr-2"></i>
+            Visualizar Prévia
+          </button>
+          <button type="submit" id="submitBtn" class="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold px-8 py-4 rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center">
+            <i data-feather="send" class="w-5 h-5 mr-2"></i>
+            <%= typeof evaluationToEdit !== 'undefined' && evaluationToEdit ? 'Atualizar Avaliação' : 'Enviar Avaliação' %>
+          </button>
+        </div>
+
+        <!-- Salvar Rascunho -->
+        <div class="text-center">
+          <button type="button" id="saveDraftBtn" class="text-gray-600 hover:text-gray-800 underline transition-colors flex items-center mx-auto">
+            <i data-feather="save" class="w-4 h-4 mr-1"></i>
+            Salvar como Rascunho
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </main>
+
+  <script src="/js/avaliar.js"></script> <%# Link para o JS externo %>
+
+</body>
+
+</html>
+
+
