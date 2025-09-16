@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todas as Avaliações - REAVALIE EAD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <%- include('partials/header', { username: username }) %>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
+                Avaliações da Comunidade
+            </h1>
+            <p class="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+                Veja o que os alunos estão dizendo sobre seus cursos e universidades.
+            </p>
+        </div>
+
+        <!-- Filtros -->
+        <div class="mb-8 p-4 bg-white rounded-lg shadow-md">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="filter-instituicao" class="block text-sm font-medium text-gray-700">Filtrar por Instituição</label>
+                    <input type="text" id="filter-instituicao" placeholder="Nome da instituição" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+                <div>
+                    <label for="filter-curso" class="block text-sm font-medium text-gray-700">Filtrar por Curso</label>
+                    <input type="text" id="filter-curso" placeholder="Nome do curso" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+                <div>
+                    <label for="sort-by" class="block text-sm font-medium text-gray-700">Ordenar por</label>
+                    <select id="sort-by" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="recentes">Mais Recentes</option>
+                        <option value="maior-nota">Maior Nota Média</option>
+                        <option value="menor-nota">Menor Nota Média</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid de Avaliações -->
+        <div id="avaliacoes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <% if (avaliacoes && avaliacoes.length > 0) { %>
+                <% avaliacoes.forEach(function(avaliacao) { %>
+                    <div class="bg-white rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 ease-in-out"
+                         data-instituicao="<%= avaliacao.instituicao_nome.toLowerCase() %>"
+                         data-curso="<%= avaliacao.curso_nome.toLowerCase() %>"
+                         data-media="<%= avaliacao.media.toFixed(1) %>"
+                         data-data="<%= new Date(avaliacao.data_formatada.split('/').reverse().join('-')).getTime() %>">
+                        <div class="p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 rounded-full bg-red-500 text-white flex items-center justify-center text-xl font-bold">
+                                    <%= avaliacao.user_name.charAt(0) %>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-lg font-semibold text-gray-900"><%= avaliacao.user_name %></p>
+                                    <p class="text-sm text-gray-500"><%= avaliacao.data_formatada %></p>
+                                </div>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800"><%= avaliacao.curso_nome %></h3>
+                            <p class="text-md text-gray-600 mb-4"><%= avaliacao.instituicao_nome %></p>
+
+                            <div class="flex items-center justify-center bg-gray-100 rounded-lg p-2 mb-4">
+                                <span class="text-3xl font-bold text-red-600"><%= avaliacao.media.toFixed(1) %></span>
+                                <span class="ml-2 text-gray-600">/ 5.0</span>
+                            </div>
+
+                            <% if (avaliacao.comentario) { %>
+                                <p class="text-gray-700 leading-relaxed max-h-24 overflow-hidden relative">
+                                    <%= avaliacao.comentario %>
+                                    <span class="absolute bottom-0 right-0 bg-gradient-to-t from-white to-transparent w-full h-8"></span>
+                                </p>
+                            <% } else { %>
+                                <p class="text-gray-500 italic">O usuário não deixou um comentário.</p>
+                            <% } %>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <p class="text-center text-gray-500 col-span-full">Nenhuma avaliação encontrada.</p>
+            <% } %>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            feather.replace();
+
+            const filterInstituicao = document.getElementById('filter-instituicao');
+            const filterCurso = document.getElementById('filter-curso');
+            const sortBy = document.getElementById('sort-by');
+            const grid = document.getElementById('avaliacoes-grid');
+            const cards = Array.from(grid.children);
+
+            function filterAndSort() {
+                const instituicaoQuery = filterInstituicao.value.toLowerCase();
+                const cursoQuery = filterCurso.value.toLowerCase();
+
+                // Filtrar
+                cards.forEach(card => {
+                    const instituicao = card.dataset.instituicao;
+                    const curso = card.dataset.curso;
+                    const matchesInstituicao = instituicao.includes(instituicaoQuery);
+                    const matchesCurso = curso.includes(cursoQuery);
+
+                    if (matchesInstituicao && matchesCurso) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // Ordenar
+                const sortValue = sortBy.value;
+                const sortedCards = cards.filter(card => card.style.display !== 'none').sort((a, b) => {
+                    if (sortValue === 'recentes') {
+                        return b.dataset.data - a.dataset.data;
+                    } else if (sortValue === 'maior-nota') {
+                        return b.dataset.media - a.dataset.media;
+                    } else if (sortValue === 'menor-nota') {
+                        return a.dataset.media - b.dataset.media;
+                    }
+                });
+
+                sortedCards.forEach(card => grid.appendChild(card));
+            }
+
+            filterInstituicao.addEventListener('input', filterAndSort);
+            filterCurso.addEventListener('input', filterAndSort);
+            sortBy.addEventListener('change', filterAndSort);
+        });
+    </script>
+</body>
+</html>
