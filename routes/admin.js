@@ -185,5 +185,41 @@ router.post('/cursos/add', async (req, res) => {
     }
 });
 
+// --- Gerenciar Avaliações ---
+router.get('/avaliacoes', async (req, res) => {
+    try {
+        const avaliacoes = await dbAll(`
+            SELECT
+                a.id,
+                u.name as user_name,
+                i.nome as instituicao_nome,
+                c.nome as curso_nome,
+                a.comentario,
+                strftime('%d/%m/%Y', a.data) as data_formatada
+            FROM avaliacoes a
+            LEFT JOIN users u ON a.user_id = u.id
+            LEFT JOIN instituicoes i ON a.instituicao_id = i.id
+            LEFT JOIN cursos c ON a.curso_id = c.id
+            ORDER BY a.data DESC
+        `);
+        const message = req.query.message || '';
+        res.render('admin/admin-avaliacoes', { avaliacoes, message });
+    } catch (error) {
+        console.error('Erro ao carregar avaliações:', error);
+        res.status(500).send('Erro ao carregar lista de avaliações.');
+    }
+});
+
+router.post('/avaliacoes/delete/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await dbRun(`DELETE FROM avaliacoes WHERE id = ?`, [id]);
+        res.redirect('/admin/avaliacoes?message=Avaliação removida com sucesso!');
+    } catch (error) {
+        console.error('Erro ao remover avaliação:', error);
+        res.redirect('/admin/avaliacoes?message=Erro ao remover avaliação.&error=true');
+    }
+});
+
 // Exportar o roteador
 module.exports = router;

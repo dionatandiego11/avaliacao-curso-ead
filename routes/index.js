@@ -174,4 +174,46 @@ router.get('/my-evaluations', requireUserAuth, async (req, res) => {
     }
 });
 
+// Rota para a página de listagem de todas as avaliações
+router.get('/avaliacoes', async (req, res) => {
+    try {
+        const avaliacoes = await dbAll(`
+            SELECT
+                a.id,
+                u.name as user_name,
+                i.nome as instituicao_nome,
+                c.nome as curso_nome,
+                a.conteudo, a.professores, a.apoio, a.estrutura, a.material, a.experiencia,
+                a.comentario,
+                strftime('%d/%m/%Y', a.data) as data_formatada,
+                (a.conteudo + a.professores + a.apoio + a.estrutura + a.material + a.experiencia) / 6.0 as media
+            FROM avaliacoes a
+            JOIN users u ON a.user_id = u.id
+            JOIN instituicoes i ON a.instituicao_id = i.id
+            JOIN cursos c ON a.curso_id = c.id
+            ORDER BY a.data DESC
+        `);
+
+        // Processar o nome do usuário para ser parcialmente anônimo
+        const avaliacoesAnonimas = avaliacoes.map(avaliacao => {
+            const nameParts = avaliacao.user_name.split(' ');
+            const firstName = nameParts[0];
+            const lastNameInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1].charAt(0) + '.' : '';
+            const anonymousName = `${firstName} ${lastNameInitial}`;
+            return {
+                ...avaliacao,
+                user_name: anonymousName
+            };
+        });
+
+        res.render('avaliacoes', {
+            avaliacoes: avaliacoesAnonimas,
+            username: req.session.username || null
+        });
+    } catch (error) {
+        console.error('Erro ao buscar avaliações:', error);
+        res.status(500).send('Erro ao carregar a página de avaliações.');
+    }
+});
+
 module.exports = router;

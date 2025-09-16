@@ -20,7 +20,7 @@
     </div>
   </header>
 
-  <div class="max-w-5xl mx-auto py-10 px-6">
+  <div class="max-w-7xl mx-auto py-10 px-6">
     <h1 class="text-3xl font-bold text-red-600 mb-8 text-center">Gerenciar Avaliações</h1>
 
     <% if (message) { %>
@@ -30,43 +30,43 @@
     <% } %>
 
     <section class="bg-white p-6 rounded shadow">
-      <h2 class="text-xl font-semibold mb-4">Lista de Todas as Avaliações</h2>
-      <% if (avaliacoes && avaliacoes.length > 0) { %>
-        <ul class="space-y-4">
-          <% avaliacoes.forEach(function(av) { %>
-            <li class="bg-gray-50 p-4 rounded-md shadow-sm">
-                <p class="text-sm text-gray-700">
-                    <strong>RA:</strong> <%= av.ra || 'N/A' %> | 
-                    <strong>Inst:</strong> <%= av.instituicao_nome || 'N/A' %> | 
-                    <strong>Curso:</strong> <%= av.curso_nome || 'N/A' %> | 
-                    <strong>Data:</strong> <%= av.data_formatada %>
-                </p>
-                <p class="text-sm text-gray-700 mt-2">
-                    <strong>Notas:</strong> 
-                    Conteúdo: <%= av.conteudo %>, 
-                    Professores: <%= av.professores %>, 
-                    Apoio: <%= av.apoio %>, 
-                    Estrutura: <%= av.estrutura %>, 
-                    Material: <%= av.material %>, 
-                    Experiência: <%= av.experiencia %>
-                </p>
-                <p class="text-sm text-gray-700 mt-2">
-                    <strong>Comentário:</strong> <%= av.comentario || 'Nenhum' %>
-                </p>
-                <div class="flex justify-end space-x-2 mt-3">
-                  <!-- Edição de Avaliações - Pode ser mais complexo para implementar inline,
-                       talvez uma página dedicada para edição de avaliação por ID.
-                       Por simplicidade, aqui focarei apenas na remoção. -->
-                  <form method="POST" action="/admin/avaliacoes/delete/<%= av.id %>" onsubmit="return confirm('Tem certeza que deseja remover esta avaliação?');">
-                    <button type="submit" class="bg-red-500 text-white text-sm px-3 py-1 rounded hover:bg-red-600">Remover</button>
-                  </form>
-                </div>
-            </li>
-          <% }); %>
-        </ul>
-      <% } else { %>
-        <p class="text-gray-600">Nenhuma avaliação cadastrada.</p>
-      <% } %>
+      <h2 class="text-xl font-semibold mb-4">Lista de Avaliações</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white">
+          <thead class="bg-gray-200">
+            <tr>
+              <th class="py-2 px-4 border-b">Usuário</th>
+              <th class="py-2 px-4 border-b">Curso</th>
+              <th class="py-2 px-4 border-b">Instituição</th>
+              <th class="py-2 px-4 border-b">Comentário</th>
+              <th class="py-2 px-4 border-b">Data</th>
+              <th class="py-2 px-4 border-b">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (avaliacoes && avaliacoes.length > 0) { %>
+              <% avaliacoes.forEach(function(avaliacao) { %>
+                <tr class="hover:bg-gray-50">
+                  <td class="py-2 px-4 border-b"><%= avaliacao.user_name %></td>
+                  <td class="py-2 px-4 border-b"><%= avaliacao.curso_nome %></td>
+                  <td class="py-2 px-4 border-b"><%= avaliacao.instituicao_nome %></td>
+                  <td class="py-2 px-4 border-b text-sm text-gray-600 max-w-xs truncate"><%= avaliacao.comentario || 'N/A' %></td>
+                  <td class="py-2 px-4 border-b"><%= avaliacao.data_formatada %></td>
+                  <td class="py-2 px-4 border-b">
+                    <form method="POST" action="/admin/avaliacoes/delete/<%= avaliacao.id %>" onsubmit="return confirm('Tem certeza que deseja remover esta avaliação? Esta ação não pode ser desfeita.');">
+                      <button type="submit" class="bg-red-500 text-white text-xs px-3 py-1 rounded hover:bg-red-600">Remover</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="6" class="text-center py-4">Nenhuma avaliação encontrada.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
     </section>
 
   </div>
