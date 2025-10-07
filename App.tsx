@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Review, Course } from './types';
 import { REGIONS } from './constants';
+import { findCourseInfo } from './courses';
 import Header from './components/Header';
 import Filters from './components/Filters';
 import CourseList from './components/CourseList';
@@ -17,6 +18,8 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
   const [minRating, setMinRating] = useState(0);
+  const [selectedArea, setSelectedArea] = useState('');
+  const [selectedDegree, setSelectedDegree] = useState('');
 
   useEffect(() => {
     const loadDb = async () => {
@@ -46,7 +49,7 @@ const App: React.FC = () => {
     const coursesMap: { [key: string]: Review[] } = {};
 
     reviews.forEach(review => {
-      const key = `${review.university}|${review.course}`;
+      const key = `${review.university}|${review.course}|${review.degree}`;
       if (!coursesMap[key]) {
         coursesMap[key] = [];
       }
@@ -54,7 +57,10 @@ const App: React.FC = () => {
     });
 
     return Object.entries(coursesMap).map(([key, courseReviews]) => {
-      const [university, courseName] = key.split('|');
+      const [university, courseName, degreeStr] = key.split('|');
+      const degree = parseInt(degreeStr, 10);
+      const courseInfo = findCourseInfo(courseName);
+
       const totalReviews = courseReviews.length;
       
       const totalRating = courseReviews.reduce((sum, review) => {
@@ -67,6 +73,8 @@ const App: React.FC = () => {
       return {
         university,
         course: courseName,
+        area: courseInfo?.area || 'Não Classificada',
+        degree,
         averageRating,
         reviewCount: totalReviews,
         reviews: courseReviews,
@@ -87,10 +95,14 @@ const App: React.FC = () => {
         
         const matchesRating = course.averageRating >= minRating;
 
-        return matchesSearch && matchesRegion && matchesRating;
+        const matchesArea = selectedArea ? course.area === selectedArea : true;
+
+        const matchesDegree = selectedDegree ? course.degree === parseInt(selectedDegree, 10) : true;
+
+        return matchesSearch && matchesRegion && matchesRating && matchesArea && matchesDegree;
       })
       .sort((a, b) => b.averageRating - a.averageRating);
-  }, [processedCourses, searchTerm, selectedRegion, minRating]);
+  }, [processedCourses, searchTerm, selectedRegion, minRating, selectedArea, selectedDegree]);
 
   const uniqueUniversities = useMemo(() => {
     const universitySet = new Set(reviews.map(r => r.university));
@@ -135,6 +147,10 @@ const App: React.FC = () => {
           minRating={minRating}
           onRatingChange={setMinRating}
           regions={REGIONS}
+          selectedArea={selectedArea}
+          onAreaChange={setSelectedArea}
+          selectedDegree={selectedDegree}
+          onDegreeChange={setSelectedDegree}
         />
 
         <CourseList courses={filteredCourses} onCourseSelect={handleSelectCourse} />

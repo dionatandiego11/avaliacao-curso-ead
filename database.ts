@@ -62,6 +62,7 @@ export const initDatabase = async () => {
           academicRegistry TEXT NOT NULL,
           university TEXT NOT NULL,
           course TEXT NOT NULL,
+          degree INTEGER NOT NULL,
           campus TEXT NOT NULL,
           region TEXT NOT NULL,
           comment TEXT,
@@ -77,7 +78,7 @@ export const initDatabase = async () => {
 
       const stmt = db.prepare(`
         INSERT INTO reviews VALUES (
-          :id, :fullName, :academicRegistry, :university, :course, :campus, :region, :comment, :createdAt,
+          :id, :fullName, :academicRegistry, :university, :course, :degree, :campus, :region, :comment, :createdAt,
           :courseQuality, :professorQuality, :studySupport, :onSiteSupport, :didacticMaterial
         )
       `);
@@ -89,6 +90,7 @@ export const initDatabase = async () => {
           ':academicRegistry': review.academicRegistry,
           ':university': review.university,
           ':course': review.course,
+          ':degree': review.degree,
           ':campus': review.campus,
           ':region': review.region,
           ':comment': review.comment || null,
@@ -137,7 +139,7 @@ export const addReviewToDb = (review: Review) => {
 
     const stmt = db.prepare(`
         INSERT INTO reviews VALUES (
-          :id, :fullName, :academicRegistry, :university, :course, :campus, :region, :comment, :createdAt,
+          :id, :fullName, :academicRegistry, :university, :course, :degree, :campus, :region, :comment, :createdAt,
           :courseQuality, :professorQuality, :studySupport, :onSiteSupport, :didacticMaterial
         )
       `);
@@ -148,6 +150,7 @@ export const addReviewToDb = (review: Review) => {
         ':academicRegistry': review.academicRegistry,
         ':university': review.university,
         ':course': review.course,
+        ':degree': review.degree,
         ':campus': review.campus,
         ':region': review.region,
         ':comment': review.comment || null,
