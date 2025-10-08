@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { COURSE_CATALOG } from '../courses';
 
 interface FiltersProps {
   searchTerm: string;
@@ -9,6 +10,10 @@ interface FiltersProps {
   minRating: number;
   onRatingChange: (value: number) => void;
   regions: string[];
+  selectedArea: string;
+  onAreaChange: (value: string) => void;
+  selectedDegree: string;
+  onDegreeChange: (value: string) => void;
 }
 
 const SearchIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -21,6 +26,14 @@ const StarIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
+const DEGREES = {
+  '1': 'Bacharelado',
+  '2': 'Licenciatura',
+  '3': 'Tecnólogo',
+};
+
+const areas = [...new Set(COURSE_CATALOG.map(item => item.area))];
+
 const Filters: React.FC<FiltersProps> = ({
   searchTerm,
   onSearchChange,
@@ -29,9 +42,13 @@ const Filters: React.FC<FiltersProps> = ({
   minRating,
   onRatingChange,
   regions,
+  selectedArea,
+  onAreaChange,
+  selectedDegree,
+  onDegreeChange,
 }) => {
   return (
-    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg mb-8 space-y-4 md:space-y-0 md:flex md:items-center md:justify-between md:gap-4">
+    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg mb-8 space-y-4">
       <div className="relative flex-grow">
         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <input
@@ -42,26 +59,53 @@ const Filters: React.FC<FiltersProps> = ({
           className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <select
           value={selectedRegion}
           onChange={(e) => onRegionChange(e.target.value)}
-          className="w-full md:w-48 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Todas as Regiões</option>
           {regions.map((region) => (
             <option key={region} value={region}>{region}</option>
           ))}
         </select>
+
+        <select
+          value={selectedArea}
+          onChange={(e) => onAreaChange(e.target.value)}
+          className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Todas as Áreas</option>
+          {areas.map((area) => (
+            <option key={area} value={area}>{area}</option>
+          ))}
+        </select>
+
+        <select
+          value={selectedDegree}
+          onChange={(e) => onDegreeChange(e.target.value)}
+          className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Todos os Graus</option>
+          {Object.entries(DEGREES).map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
         
-        <div className="w-full md:w-48 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 flex items-center justify-between">
-            <label className="text-slate-600 dark:text-slate-300">Nota:</label>
+        <div className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 flex items-center justify-between">
+            <label className="text-slate-600 dark:text-slate-300">Nota mínima:</label>
             <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((rate) => (
                     <button key={rate} onClick={() => onRatingChange(rate)} className="focus:outline-none">
                          <StarIcon className={`w-5 h-5 transition-colors ${minRating >= rate ? 'text-amber-400' : 'text-slate-300 dark:text-slate-500 hover:text-amber-300'}`} />
                     </button>
                 ))}
+                 {minRating > 0 && (
+                    <button onClick={() => onRatingChange(0)} className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 ml-1">
+                        Limpar
+                    </button>
+                )}
             </div>
         </div>
       </div>

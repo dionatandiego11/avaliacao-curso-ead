@@ -24,9 +24,16 @@ const initialFormData = {
   academicRegistry: '',
   university: '',
   course: '',
+  degree: 0,
   campus: '',
   region: '',
   comment: '',
+};
+
+const DEGREES = {
+  '1': 'Bacharelado',
+  '2': 'Licenciatura',
+  '3': 'Tecnólogo',
 };
 
 const initialRatings: Ratings = {
@@ -55,6 +62,7 @@ const ReviewFormModal: React.FC<ReviewFormModalProps> = ({ isOpen, onClose, onSu
     if (!formData.academicRegistry.trim()) newErrors.academicRegistry = "R.A. é obrigatório.";
     if (!formData.university.trim()) newErrors.university = "Universidade é obrigatória.";
     if (!formData.course.trim()) newErrors.course = "Curso é obrigatório.";
+    if (formData.degree === 0) newErrors.degree = "Grau é obrigatório.";
     if (!formData.campus.trim()) newErrors.campus = "Polo é obrigatório.";
     if (!formData.region.trim()) newErrors.region = "Região é obrigatória.";
 
@@ -113,6 +121,16 @@ const ReviewFormModal: React.FC<ReviewFormModalProps> = ({ isOpen, onClose, onSu
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Curso</label>
                     <input type="text" value={formData.course} onChange={e => setFormData({...formData, course: e.target.value})} className="w-full input-style" />
                     {errors.course && <p className="text-red-500 text-xs mt-1">{errors.course}</p>}
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Grau</label>
+                    <select value={formData.degree} onChange={e => setFormData({...formData, degree: parseInt(e.target.value, 10)})} className="w-full input-style">
+                        <option value={0} disabled>Selecione o Grau</option>
+                        {Object.entries(DEGREES).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                        ))}
+                    </select>
+                    {errors.degree && <p className="text-red-500 text-xs mt-1">{errors.degree}</p>}
                 </div>
                  <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Polo de Apoio</label>
