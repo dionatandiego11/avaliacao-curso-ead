@@ -8,11 +8,11 @@ import ReviewFormModal from './components/ReviewFormModal';
 import CourseDetailModal from './components/CourseDetailModal';
 import { supabase } from './lib/supabaseClient';
 
-const App: React.FC = () => {
-  const [reviews, setReviews] = useState<Review[]>([]);
+const App = () => {
+  const [reviews, setReviews] = useState([]);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [uniqueUniversities, setUniqueUniversities] = useState<string[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [uniqueUniversities, setUniqueUniversities] = useState([]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
@@ -21,39 +21,40 @@ const App: React.FC = () => {
   const [selectedGrau, setSelectedGrau] = useState('');
   const [selectedCurso, setSelectedCurso] = useState('');
 
-  useEffect(() => {
-    const fetchReviews = async () => {
-      const { data, error } = await supabase
-        .from('reviews') // NOTE: Assumes a 'reviews' table exists in your Supabase project.
-        .select('*')
-        .order('createdAt', { ascending: false });
+  // Estados de controle da UI
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 9;
 
-      if (error) {
-        console.error('Error fetching reviews:', error);
-      } else if (data) {
-        const formattedData = data.map(r => ({ ...r, createdAt: new Date(r.createdAt) }));
-        setReviews(formattedData);
+  // Efeito para buscar os dados iniciais
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [reviewsRes, unisRes] = await Promise.all([
+          supabase.from('reviews').select('*').order('createdAt', { ascending: false }),
+          supabase.from('instituicoes').select('nome').order('nome', { ascending: true })
+        ]);
+        
+        if (reviewsRes.error) throw new Error(`Erro ao buscar avaliações: ${reviewsRes.error.message}`);
+        if (unisRes.error) throw new Error(`Erro ao buscar instituições: ${unisRes.error.message}`);
+        
+        const formattedReviews = reviewsRes.data?.map(r => ({ ...r, createdAt: new Date(r.createdAt) })) || [];
+        setReviews(formattedReviews);
+        setUniqueUniversities(unisRes.data?.map(i => i.nome) || []);
+
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Ocorreu um erro desconhecido');
+      } finally {
+        setLoading(false);
       }
     };
-    
-    const fetchUniversities = async () => {
-        const { data, error } = await supabase
-            .from('instituicoes')
-            .select('nome')
-            .order('nome', { ascending: true });
-
-        if (error) {
-            console.error('Error fetching universities:', error);
-        } else if (data) {
-            setUniqueUniversities(data.map(i => i.nome));
-        }
-    };
-
-    fetchReviews();
-    fetchUniversities();
+    fetchData();
   }, []);
 
-  const addReview = async (newReviewData: Omit<Review, 'id' | 'createdAt'>) => {
+  const addReview = async (newReviewData) => {
     const { data, error } = await supabase
         .from('reviews')
         .insert([newReviewData])
@@ -62,15 +63,16 @@ const App: React.FC = () => {
 
     if (error) {
         console.error('Error adding review:', error);
+        // Em uma app real, usaríamos um toast/notificação em vez de alert
         alert('Ocorreu um erro ao enviar sua avaliação. Tente novamente.');
     } else if (data) {
-        const newReview: Review = { ...data, createdAt: new Date(data.createdAt) };
+        const newReview = { ...data, createdAt: new Date(data.createdAt) };
         setReviews(prevReviews => [newReview, ...prevReviews]);
     }
   };
 
-  const processedCourses = useMemo<Course[]>(() => {
-    const coursesMap: { [key: string]: Review[] } = {};
+  const processedCourses = useMemo(() => {
+    const coursesMap = {};
 
     reviews.forEach(review => {
       const key = `${review.university}|${review.course}`;
@@ -89,7 +91,7 @@ const App: React.FC = () => {
           return sum + avgReviewRating;
       }, 0);
       
-      const averageRating = totalRating / totalReviews;
+      const averageRating = totalReviews > 0 ? totalRating / totalReviews : 0;
       const details = courseDetailsMap.get(courseName.trim().toLowerCase());
       
       return {
@@ -110,7 +112,7 @@ const App: React.FC = () => {
       coursesData = coursesData.filter(c => c.area === selectedArea);
     }
     if (selectedGrau) {
-      const selectedGrauKey = Object.keys(DEGREES).find(key => DEGREES[key as keyof typeof DEGREES] === selectedGrau);
+      const selectedGrauKey = Object.keys(DEGREES).find(key => DEGREES[key] === selectedGrau);
       if (selectedGrauKey) {
           coursesData = coursesData.filter(c => c.grauKey === selectedGrauKey);
       }
@@ -119,10 +121,12 @@ const App: React.FC = () => {
     return courseNames.sort();
   }, [selectedArea, selectedGrau]);
   
-  const filteredCourses = useMemo(() => {
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const filteredCoursesBase = useMemo(() => {
     return processedCourses
       .filter(course => {
-        const searchLower = searchTerm.toLowerCase();
+        const searchLower = debouncedSearchTerm.toLowerCase();
         const matchesSearch = 
           course.university.toLowerCase().includes(searchLower) ||
           course.course.toLowerCase().includes(searchLower) ||
@@ -137,25 +141,37 @@ const App: React.FC = () => {
         return matchesSearch && matchesRegion && matchesRating && matchesArea && matchesGrau && matchesCurso;
       })
       .sort((a, b) => b.averageRating - a.averageRating);
-  }, [processedCourses, searchTerm, selectedRegion, minRating, selectedArea, selectedGrau, selectedCurso]);
+  }, [processedCourses, debouncedSearchTerm, selectedRegion, minRating, selectedArea, selectedGrau, selectedCurso]);
 
-  const handleAreaChange = (area: string) => {
+  const paginatedCourses = useMemo(() => {
+    return filteredCoursesBase.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  }, [filteredCoursesBase, currentPage]);
+
+  const handleAreaChange = (area) => {
     setSelectedArea(area);
     setSelectedCurso('');
+    setCurrentPage(1);
   };
 
-  const handleGrauChange = (grau: string) => {
+  const handleGrauChange = (grau) => {
     setSelectedGrau(grau);
     setSelectedCurso('');
+    setCurrentPage(1);
   };
+  
+  useEffect(() => {
+      setCurrentPage(1);
+  }, [debouncedSearchTerm, selectedRegion, minRating, selectedArea, selectedGrau, selectedCurso]);
 
-  const handleSelectCourse = useCallback((course: Course) => {
+  const handleSelectCourse = useCallback((course) => {
     setSelectedCourse(course);
   }, []);
 
   const handleCloseDetailModal = useCallback(() => {
     setSelectedCourse(null);
   }, []);
+
+  const totalPages = Math.ceil(filteredCoursesBase.length / PAGE_SIZE);
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
@@ -186,7 +202,38 @@ const App: React.FC = () => {
           cursos={availableCoursesForFilter}
         />
 
-        <CourseList courses={filteredCourses} onCourseSelect={handleSelectCourse} />
+        {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 dark:bg-red-900 dark:text-red-200 dark:border-red-700" role="alert">{error}</div>}
+        
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="animate-pulse bg-slate-200 dark:bg-slate-700 rounded-lg h-40" />
+            ))}
+          </div>
+        ) : (
+          <CourseList courses={paginatedCourses} onCourseSelect={handleSelectCourse} />
+        )}
+        
+        {!loading && filteredCoursesBase.length > PAGE_SIZE && (
+          <div className="flex justify-center items-center mt-8 space-x-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Anterior
+            </button>
+            <span className="px-4 py-2 font-medium text-slate-700 dark:text-slate-300">Página {currentPage} de {totalPages}</span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Próximo
+            </button>
+          </div>
+        )}
+
       </main>
 
       <ReviewFormModal

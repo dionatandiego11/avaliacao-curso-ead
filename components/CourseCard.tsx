@@ -15,6 +15,16 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onSelect }) => {
         <h3 className="text-lg font-bold text-slate-800 dark:text-white truncate">{course.course}</h3>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{course.university}</p>
 
+        // No div p-6, após <p className="text-sm...">{course.university}</p>
+        <div className="flex flex-wrap gap-2 mt-2 mb-4">
+          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full dark:bg-blue-900 dark:text-blue-200">
+          {course.area}
+          </span>
+          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full dark:bg-green-900 dark:text-green-200">
+          {course.grau}
+          </span>
+        </div>
+
         <div className="flex items-center gap-2 mb-4">
           <StarRating rating={course.averageRating} />
           <span className="text-slate-600 dark:text-slate-300 font-semibold">{course.averageRating.toFixed(1)}</span>
