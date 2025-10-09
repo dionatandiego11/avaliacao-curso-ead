@@ -53,3 +53,5 @@ courseClassifications.forEach(({ area, grau, cursos }) => {
     }
   });
 });
+
+export const uniqueCourses = [...new Set(courseClassifications.flatMap(c => c.cursos))].sort();
