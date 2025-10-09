@@ -1,7 +1,7 @@
 
 import React, { useState, FormEvent, useCallback } from 'react';
 import { Review, Ratings } from '../types';
-import { RATING_CRITERIA } from '../constants';
+import { RATING_CRITERIA, uniqueCourses } from '../constants';
 import StarRating from './StarRating';
 
 interface ReviewFormModalProps {
@@ -103,15 +103,18 @@ const ReviewFormModal: React.FC<ReviewFormModalProps> = ({ isOpen, onClose, onSu
                 </div>
                  <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Universidade</label>
-                    <input type="text" list="universities-list" value={formData.university} onChange={e => setFormData({...formData, university: e.target.value})} className="w-full input-style" />
-                    <datalist id="universities-list">
-                        {universities.map(uni => <option key={uni} value={uni} />)}
-                    </datalist>
+                    <select value={formData.university} onChange={e => setFormData({...formData, university: e.target.value})} className="w-full input-style">
+                        <option value="">Selecione a Universidade</option>
+                        {universities.map(uni => <option key={uni} value={uni}>{uni}</option>)}
+                    </select>
                     {errors.university && <p className="text-red-500 text-xs mt-1">{errors.university}</p>}
                 </div>
                  <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Curso</label>
-                    <input type="text" value={formData.course} onChange={e => setFormData({...formData, course: e.target.value})} className="w-full input-style" />
+                    <select value={formData.course} onChange={e => setFormData({...formData, course: e.target.value})} className="w-full input-style">
+                        <option value="">Selecione o Curso</option>
+                        {uniqueCourses.map(course => <option key={course} value={course}>{course}</option>)}
+                    </select>
                     {errors.course && <p className="text-red-500 text-xs mt-1">{errors.course}</p>}
                 </div>
                  <div>

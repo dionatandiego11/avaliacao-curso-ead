@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useDebounce } from './components/Hook/useDebounce';
 import { Review, Course } from './types';
 import { REGIONS, DEGREES, uniqueAreas, courseClassifications, courseDetailsMap } from './constants';
 import Header from './components/Header';
