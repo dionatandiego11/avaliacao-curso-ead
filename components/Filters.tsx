@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { COURSE_CATALOG } from '../courses';
 
 interface FiltersProps {
   searchTerm: string;
@@ -12,8 +11,13 @@ interface FiltersProps {
   regions: string[];
   selectedArea: string;
   onAreaChange: (value: string) => void;
-  selectedDegree: string;
-  onDegreeChange: (value: string) => void;
+  areas: string[];
+  selectedGrau: string;
+  onGrauChange: (value: string) => void;
+  graus: string[];
+  selectedCurso: string;
+  onCursoChange: (value: string) => void;
+  cursos: string[];
 }
 
 const SearchIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -26,14 +30,6 @@ const StarIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     </svg>
 );
 
-const DEGREES = {
-  '1': 'Bacharelado',
-  '2': 'Licenciatura',
-  '3': 'Tecnólogo',
-};
-
-const areas = [...new Set(COURSE_CATALOG.map(item => item.area))];
-
 const Filters: React.FC<FiltersProps> = ({
   searchTerm,
   onSearchChange,
@@ -44,9 +40,17 @@ const Filters: React.FC<FiltersProps> = ({
   regions,
   selectedArea,
   onAreaChange,
-  selectedDegree,
-  onDegreeChange,
+  areas,
+  selectedGrau,
+  onGrauChange,
+  graus,
+  selectedCurso,
+  onCursoChange,
+  cursos,
 }) => {
+    
+  const selectClassName = "w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500";
+
   return (
     <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg mb-8 space-y-4">
       <div className="relative flex-grow">
@@ -57,24 +61,27 @@ const Filters: React.FC<FiltersProps> = ({
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Buscar por universidade, curso ou polo"
         />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <select
           value={selectedRegion}
           onChange={(e) => onRegionChange(e.target.value)}
-          className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={selectClassName}
+          aria-label="Filtrar por região"
         >
           <option value="">Todas as Regiões</option>
           {regions.map((region) => (
             <option key={region} value={region}>{region}</option>
           ))}
         </select>
-
+        
         <select
           value={selectedArea}
           onChange={(e) => onAreaChange(e.target.value)}
-          className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={selectClassName}
+          aria-label="Filtrar por área de conhecimento"
         >
           <option value="">Todas as Áreas</option>
           {areas.map((area) => (
@@ -83,29 +90,38 @@ const Filters: React.FC<FiltersProps> = ({
         </select>
 
         <select
-          value={selectedDegree}
-          onChange={(e) => onDegreeChange(e.target.value)}
-          className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={selectedGrau}
+          onChange={(e) => onGrauChange(e.target.value)}
+          className={selectClassName}
+          aria-label="Filtrar por grau do curso"
         >
           <option value="">Todos os Graus</option>
-          {Object.entries(DEGREES).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
+          {graus.map((grau) => (
+            <option key={grau} value={grau}>{grau}</option>
           ))}
         </select>
         
+        <select
+          value={selectedCurso}
+          onChange={(e) => onCursoChange(e.target.value)}
+          className={`${selectClassName} disabled:opacity-50 disabled:cursor-not-allowed`}
+          disabled={cursos.length === 0}
+          aria-label="Filtrar por curso"
+        >
+          <option value="">Todos os Cursos</option>
+          {cursos.map((curso) => (
+            <option key={curso} value={curso}>{curso}</option>
+          ))}
+        </select>
+
         <div className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 flex items-center justify-between">
-            <label className="text-slate-600 dark:text-slate-300">Nota mínima:</label>
-            <div className="flex items-center gap-1">
+            <label htmlFor="rating-filter" className="text-slate-600 dark:text-slate-300 text-sm">Nota Mínima:</label>
+            <div id="rating-filter" className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((rate) => (
-                    <button key={rate} onClick={() => onRatingChange(rate)} className="focus:outline-none">
+                    <button key={rate} onClick={() => onRatingChange(rate)} className="focus:outline-none" aria-label={`Nota mínima ${rate}`}>
                          <StarIcon className={`w-5 h-5 transition-colors ${minRating >= rate ? 'text-amber-400' : 'text-slate-300 dark:text-slate-500 hover:text-amber-300'}`} />
                     </button>
                 ))}
-                 {minRating > 0 && (
-                    <button onClick={() => onRatingChange(0)} className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 ml-1">
-                        Limpar
-                    </button>
-                )}
             </div>
         </div>
       </div>

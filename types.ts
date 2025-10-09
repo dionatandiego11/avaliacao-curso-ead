@@ -13,7 +13,6 @@ export interface Review extends Ratings {
   academicRegistry: string;
   university: string;
   course: string;
-  degree: number;
   campus: string;
   region: string;
   comment?: string;
@@ -23,9 +22,9 @@ export interface Review extends Ratings {
 export interface Course {
   university: string;
   course: string;
-  area: string;
-  degree: number;
   averageRating: number;
   reviewCount: number;
+  area: string;
+  grau: string;
   reviews: Review[];
 }
