@@ -1,0 +1,5 @@
+{
+  "name": "AvaliaEAD",
+  "description": "Uma plataforma para avaliações autênticas de estudantes sobre universidades, cursos e acomodações, construída com React e Tailwind CSS.",
+  "requestFramePermissions": []
+}
