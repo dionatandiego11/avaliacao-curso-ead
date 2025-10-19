@@ -13,12 +13,6 @@ const DocumentTextIcon: React.FC<{ className?: string }> = ({ className = 'w-6 h
   </svg>
 );
 
-const BuildingOfficeIcon: React.FC<{ className?: string }> = ({ className = 'w-6 h-6' }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h6.375a.375.375 0 0 1 .375.375v1.5a.375.375 0 0 1-.375.375H9a.375.375 0 0 1-.375-.375v-1.5A.375.375 0 0 1 9 6.75ZM9 12.75h6.375a.375.375 0 0 1 .375.375v1.5a.375.375 0 0 1-.375.375H9a.375.375 0 0 1-.375-.375v-1.5a.375.375 0 0 1 .375-.375Z" />
-  </svg>
-);
-
 const MapPinIcon: React.FC<{ className?: string }> = ({ className = 'w-6 h-6' }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
@@ -45,20 +39,34 @@ const Hero: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) 
             </span>
           </h1>
 
-          <div className="max-w-2xl mx-auto my-8">
-            <div className="relative">
+          <div className="max-w-3xl mx-auto my-8">
+            <div className="bg-white rounded-lg shadow-lg p-2 flex items-center space-x-2">
+              <div className="relative">
+                  <select className="appearance-none bg-transparent font-semibold text-gray-700 py-3 pl-4 pr-8 rounded-md focus:outline-none cursor-pointer">
+                      <option>Universidade</option>
+                      <option>Curso</option>
+                      <option>Localização</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                  </div>
+              </div>
+              <div className="w-px h-8 bg-gray-200"></div>
               <input 
                 type="text" 
-                placeholder="Buscar por Universidade, Acomodação, etc..." 
-                className="w-full p-4 pl-12 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-300"
+                placeholder="Digite o que você procura..." 
+                className="w-full p-3 text-gray-800 focus:outline-none bg-transparent"
               />
-              <svg className="w-6 h-6 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <button className="bg-red-500 text-white font-bold py-3 px-6 rounded-md hover:bg-red-600 transition-colors flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                  Buscar
+              </button>
             </div>
           </div>
 
           <p className="text-lg font-semibold mb-6">AvaliaEAD é a única plataforma de avaliação com todas as opções</p>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
             <button className="bg-white text-gray-800 flex items-center justify-center p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow font-semibold">
               <GraduationCapIcon className="w-5 h-5 mr-2 text-gray-600"/>
               Universidade
@@ -66,10 +74,6 @@ const Hero: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) 
             <button className="bg-white text-gray-800 flex items-center justify-center p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow font-semibold">
               <DocumentTextIcon className="w-5 h-5 mr-2 text-gray-600"/>
               Curso
-            </button>
-            <button className="bg-white text-gray-800 flex items-center justify-center p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow font-semibold">
-              <BuildingOfficeIcon className="w-5 h-5 mr-2 text-gray-600"/>
-              Acomodação
             </button>
             <button className="bg-white text-gray-800 flex items-center justify-center p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow font-semibold">
               <MapPinIcon className="w-5 h-5 mr-2 text-gray-600"/>

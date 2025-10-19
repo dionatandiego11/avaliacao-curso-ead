@@ -1,38 +1,49 @@
 import React, { useState } from 'react';
-import Header from './components/Header';
 import Hero from './components/Hero';
 import FeaturedReviews from './components/FeaturedReviews';
 import Footer from './components/Footer';
 import LoginPage from './pages/LoginPage';
 import ReviewPage from './pages/ReviewPage';
+import RankingPage from './pages/RankingPage';
+import { AuthProvider } from './contexts/AuthContext';
 
+const HomePage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => (
+  <>
+    <Hero onNavigate={onNavigate} />
+    <FeaturedReviews />
+    <Footer />
+  </>
+);
 
-const App: React.FC = () => {
-  const [page, setPage] = useState('home');
+function App() {
+  const [currentPage, setCurrentPage] = useState('home');
 
-  const navigate = (targetPage: string) => {
-    setPage(targetPage);
+  const handleNavigate = (page: string) => {
+    setCurrentPage(page);
     window.scrollTo(0, 0);
+  };
+  
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'login':
+        return <LoginPage onNavigate={handleNavigate} />;
+      case 'review':
+        return <ReviewPage onNavigate={handleNavigate} />;
+      case 'ranking':
+        return <RankingPage onNavigate={handleNavigate} />;
+      case 'home':
+      default:
+        return <HomePage onNavigate={handleNavigate} />;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] flex flex-col">
-      {page !== 'home' && <Header onNavigate={navigate} variant="solid" />}
-      
-      <main className="flex-grow">
-        {page === 'home' && (
-          <>
-            <Hero onNavigate={navigate} />
-            <FeaturedReviews />
-          </>
-        )}
-        {page === 'login' && <LoginPage onNavigate={navigate} />}
-        {page === 'review' && <ReviewPage />}
-      </main>
-
-      <Footer />
-    </div>
+    <AuthProvider>
+      <div className="App">
+        {renderPage()}
+      </div>
+    </AuthProvider>
   );
-};
+}
 
 export default App;

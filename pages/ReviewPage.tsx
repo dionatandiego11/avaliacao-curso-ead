@@ -1,79 +1,190 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import StarRatingInput from '../components/StarRatingInput';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
-const reviewCategories = [
-    { id: 'courseQuality', label: 'Qualidade do curso', weight: 0.25 },
-    { id: 'profQuality', label: 'Qualidade dos professores', weight: 0.25 },
-    { id: 'studySupport', label: 'Apoio nos estudos', weight: 0.20 },
-    { id: 'campusSupport', label: 'Polo de apoio presencial', weight: 0.15 },
-    { id: 'materials', label: 'Material didático', weight: 0.15 },
-];
+const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
+  const { currentUser } = useAuth();
+  const [university, setUniversity] = useState('');
+  const [course, setCourse] = useState('');
+  const [graduationYear, setGraduationYear] = useState<number>(new Date().getFullYear());
+  const [isEAD, setIsEAD] = useState(true);
+  const [anonymous, setAnonymous] = useState(false);
+  
+  const [ratings, setRatings] = useState({
+    teachers: 0,
+    curriculum: 0,
+    infrastructure: 0,
+    support: 0,
+    market: 0,
+  });
 
-const ReviewPage: React.FC = () => {
-    const [ratings, setRatings] = useState<Record<string, number>>({
-        courseQuality: 0,
-        profQuality: 0,
-        studySupport: 0,
-        campusSupport: 0,
-        materials: 0
-    });
+  const [pros, setPros] = useState('');
+  const [cons, setCons] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const handleRatingChange = (id: string, value: number) => {
-        setRatings(prev => ({ ...prev, [id]: value }));
-    };
-
-    const weightedAverage = useMemo(() => {
-        const totalScore = reviewCategories.reduce((acc, cat) => {
-            return acc + (ratings[cat.id] * cat.weight);
-        }, 0);
-        return totalScore;
-    }, [ratings]);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        // Handle review submission logic here
-        alert(`Avaliação enviada com nota final: ${weightedAverage.toFixed(2)}! (simulação)`);
-    };
-
+  if (!currentUser) {
     return (
-        <div className="py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl mx-auto">
-                <h1 className="text-3xl font-extrabold text-gray-900 text-center">Avaliação do Curso</h1>
-                <p className="mt-2 text-center text-sm text-gray-600">
-                    Sua opinião é muito importante para a comunidade acadêmica.
-                </p>
-
-                <form onSubmit={handleSubmit} className="mt-8 bg-white p-8 rounded-xl shadow-md space-y-8">
-                    {reviewCategories.map(({ id, label }) => (
-                        <div key={id} className="flex flex-col sm:flex-row items-center justify-between">
-                            <label className="text-lg font-medium text-gray-700 mb-2 sm:mb-0">{label}</label>
-                            <StarRatingInput
-                                value={ratings[id]}
-                                onChange={(value) => handleRatingChange(id, value)}
-                            />
-                        </div>
-                    ))}
-                    
-                    <div className="border-t pt-6 flex items-center justify-between">
-                        <div className="text-lg font-bold text-gray-800">Nota Final Ponderada:</div>
-                        <div className="bg-yellow-400 text-white p-3 rounded-md flex items-center space-x-2">
-                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                            <span className="font-extrabold text-2xl">{weightedAverage.toFixed(2)}</span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <button
-                            type="submit"
-                            className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                        >
-                            Enviar Avaliação
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+        <h2 className="text-2xl font-bold mb-4">Acesso Negado</h2>
+        <p className="mb-4">Você precisa estar logado para deixar uma avaliação.</p>
+        <button onClick={() => onNavigate('login')} className="bg-red-500 text-white font-bold py-2 px-4 rounded hover:bg-red-600">
+          Fazer Login
+        </button>
+      </div>
     );
+  }
+
+  const handleRatingChange = (field: keyof typeof ratings, value: number) => {
+    setRatings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const calculateWeightedAverage = () => {
+    const total = Object.values(ratings).reduce((sum, rating) => sum + rating, 0);
+    const count = Object.values(ratings).filter(r => r > 0).length;
+    return count > 0 ? total / count : 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!university || !course || Object.values(ratings).some(r => r === 0)) {
+        setError('Por favor, preencha todos os campos e avaliações obrigatórios.');
+        return;
+    }
+
+    setSubmitting(true);
+    
+    try {
+      await addDoc(collection(db, 'reviews'), {
+        userId: currentUser.uid,
+        university: university,
+        course: course,
+        graduationYear: graduationYear,
+        isEAD: isEAD,
+        anonymous: anonymous,
+        createdAt: serverTimestamp(),
+        teachersRating: ratings.teachers,
+        curriculumRating: ratings.curriculum,
+        infrastructureRating: ratings.infrastructure,
+        supportRating: ratings.support,
+        marketReputationRating: ratings.market,
+        pros: pros,
+        cons: cons,
+        weightedAverage: calculateWeightedAverage(),
+      });
+      onNavigate('home'); // Redirect to home or a "thank you" page
+    } catch (err) {
+      console.error(err);
+      setError('Ocorreu um erro ao enviar sua avaliação. Tente novamente.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  
+  const ratingCategories = [
+    { id: 'teachers', label: 'Corpo Docente' },
+    { id: 'curriculum', label: 'Grade Curricular' },
+    { id: 'infrastructure', label: 'Infraestrutura e Plataforma Online' },
+    { id: 'support', label: 'Suporte e Atendimento ao Aluno' },
+    { id: 'market', label: 'Reputação no Mercado' },
+  ];
+
+  return (
+    <div className="bg-gray-50 min-h-screen">
+      <div className="relative bg-gray-800 text-white">
+        <div className="relative">
+          <Header onNavigate={onNavigate} />
+          <div className="container mx-auto px-6 pt-24 pb-12 text-center">
+            <h1 className="text-4xl font-bold">Deixe sua Avaliação</h1>
+            <p className="text-lg text-gray-300 mt-2">Sua opinião ajuda outros estudantes a fazerem a escolha certa!</p>
+          </div>
+        </div>
+      </div>
+
+      <main className="container mx-auto p-6 -mt-10">
+        <div className="bg-white rounded-lg shadow-xl p-8 max-w-3xl mx-auto">
+          <form onSubmit={handleSubmit}>
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Sobre o Curso</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="university" className="block text-sm font-medium text-gray-700 mb-1">Nome da Universidade *</label>
+                  <input type="text" id="university" value={university} onChange={e => setUniversity(e.target.value)} required className="w-full border-gray-300 rounded-md shadow-sm"/>
+                </div>
+                <div>
+                  <label htmlFor="course" className="block text-sm font-medium text-gray-700 mb-1">Nome do Curso *</label>
+                  <input type="text" id="course" value={course} onChange={e => setCourse(e.target.value)} required className="w-full border-gray-300 rounded-md shadow-sm"/>
+                </div>
+                <div>
+                  <label htmlFor="graduationYear" className="block text-sm font-medium text-gray-700 mb-1">Ano de Conclusão</label>
+                  <input type="number" id="graduationYear" value={graduationYear} onChange={e => setGraduationYear(parseInt(e.target.value))} className="w-full border-gray-300 rounded-md shadow-sm"/>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Modalidade</label>
+                  <div className="flex items-center space-x-4">
+                     <label className="flex items-center"><input type="radio" name="modality" checked={isEAD} onChange={() => setIsEAD(true)} className="mr-2"/> EAD</label>
+                     <label className="flex items-center"><input type="radio" name="modality" checked={!isEAD} onChange={() => setIsEAD(false)} className="mr-2"/> Presencial</label>
+                  </div>
+                </div>
+              </div>
+            </section>
+            
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Sua Avaliação (de 1 a 5 estrelas) *</h2>
+              <div className="space-y-4">
+                {ratingCategories.map(cat => (
+                  <div key={cat.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                    <label className="text-md font-medium text-gray-700 mb-2 sm:mb-0">{cat.label}</label>
+                    <StarRatingInput value={ratings[cat.id as keyof typeof ratings]} onChange={value => handleRatingChange(cat.id as keyof typeof ratings, value)} />
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Comentários</h2>
+              <div>
+                <label htmlFor="pros" className="block text-sm font-medium text-gray-700 mb-1">Pontos Positivos</label>
+                <textarea id="pros" value={pros} onChange={e => setPros(e.target.value)} rows={3} className="w-full border-gray-300 rounded-md shadow-sm"></textarea>
+              </div>
+              <div className="mt-4">
+                <label htmlFor="cons" className="block text-sm font-medium text-gray-700 mb-1">Pontos a Melhorar</label>
+                <textarea id="cons" value={cons} onChange={e => setCons(e.target.value)} rows={3} className="w-full border-gray-300 rounded-md shadow-sm"></textarea>
+              </div>
+            </section>
+            
+            <section className="mb-8">
+               <div className="flex items-start">
+                  <div className="flex items-center h-5">
+                    <input id="anonymous" name="anonymous" type="checkbox" checked={anonymous} onChange={e => setAnonymous(e.target.checked)} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label htmlFor="anonymous" className="font-medium text-gray-700">Publicar como anônimo</label>
+                    <p className="text-gray-500">Sua avaliação será publicada sem seu nome ou foto.</p>
+                  </div>
+                </div>
+            </section>
+
+            {error && <p className="text-red-600 text-center mb-4">{error}</p>}
+
+            <div className="text-center">
+              <button type="submit" disabled={submitting} className="bg-red-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400">
+                {submitting ? 'Enviando...' : 'Enviar Avaliação'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
+      
+      <Footer />
+    </div>
+  );
 };
 
 export default ReviewPage;

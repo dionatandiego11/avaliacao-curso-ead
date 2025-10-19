@@ -1,56 +1,55 @@
 import React from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase';
 
-const Header: React.FC<{
-  variant?: 'transparent' | 'solid';
-  onNavigate: (page: string) => void;
-}> = ({ variant = 'transparent', onNavigate }) => {
-  const isTransparent = variant === 'transparent';
-  const headerClasses = isTransparent
-    ? 'absolute top-0 left-0 right-0 z-10 text-white'
-    : 'relative bg-gray-800 text-white shadow-md';
-  
-  const textColor = isTransparent ? 'text-white' : 'text-black';
-  const buttonHoverBg = isTransparent ? 'hover:bg-gray-200' : 'hover:bg-gray-100';
-  const forBusinessClasses = isTransparent 
-    ? 'border border-white text-white hover:bg-white hover:text-red-500' 
-    : 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50';
+const Header: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
+  const { currentUser } = useAuth();
+
+  const handleLogout = () => {
+    signOut(auth).catch((error) => console.error("Logout failed", error));
+  };
 
   return (
-    <header className={headerClasses}>
+    <header className="absolute top-0 left-0 right-0 z-10">
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center space-x-6">
-          <div 
-            className="flex items-center space-x-2 cursor-pointer"
-            onClick={() => onNavigate('home')}
-            aria-label="Go to homepage"
-          >
-             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="6" cy="12" r="2" fill="currentColor"/>
-                <circle cx="12" cy="12" r="2" fill="currentColor"/>
-                <circle cx="18" cy="12" r="2" fill="currentColor"/>
-                <circle cx="6" cy="18" r="2" fill="currentColor"/>
-                <circle cx="12" cy="18" r="2" fill="currentColor"/>
-                <circle cx="18" cy="18" r="2" fill="currentColor"/>
-                <circle cx="6" cy="6" r="2" fill="currentColor"/>
-                <circle cx="12" cy="6" r="2" fill="currentColor"/>
-            </svg>
-            <span className="font-extrabold text-xl tracking-wider">AVALIA<span className="font-light">EAD</span></span>
-          </div>
-          <span className="hidden md:block text-sm font-light opacity-80">Ajudando estudantes a tomarem decisões</span>
+        <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onNavigate('home')}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="6" cy="12" r="2" fill="white"/>
+            <circle cx="12" cy="12" r="2" fill="white"/>
+            <circle cx="18" cy="12" r="2" fill="white"/>
+            <circle cx="6" cy="18" r="2" fill="white"/>
+            <circle cx="12" cy="18" r="2" fill="white"/>
+            <circle cx="18" cy="18" r="2" fill="white"/>
+            <circle cx="6" cy="6" r="2" fill="white"/>
+            <circle cx="12" cy="6" r="2" fill="white"/>
+          </svg>
+          <span className="font-extrabold text-xl tracking-wider text-white">AVALIA<span className="font-light">EAD</span></span>
         </div>
-        <nav className="flex items-center space-x-4">
-          <a href="#" className="hidden md:block hover:text-gray-200 text-sm font-semibold uppercase">Artigos</a>
-          <a onClick={() => onNavigate('login')} className="hidden md:block hover:text-gray-200 text-sm font-semibold uppercase cursor-pointer">Entrar</a>
-          <button 
-            onClick={() => onNavigate('review')}
-            className={`bg-white ${textColor} px-4 py-2 rounded-md font-bold text-sm ${buttonHoverBg} transition-colors`}
-          >
-            Escrever Avaliação
-          </button>
-          <button className={`hidden sm:block px-4 py-2 rounded-md font-bold text-sm transition-colors ${forBusinessClasses}`}>
-            Para Empresas
-          </button>
+        <nav className="hidden md:flex items-center space-x-8 text-white font-semibold">
+          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('ranking'); }} className="hover:text-gray-200">Rankings</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('review'); }} className="hover:text-gray-200">Deixar uma avaliação</a>
         </nav>
+        <div>
+          {currentUser ? (
+            <div className="flex items-center space-x-4">
+              <span className="text-white hidden sm:block">{currentUser.displayName || currentUser.email}</span>
+              <button 
+                onClick={handleLogout}
+                className="bg-white text-red-500 font-bold py-2 px-4 rounded-md hover:bg-gray-200 transition-colors text-sm"
+              >
+                Sair
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => onNavigate('login')}
+              className="bg-white text-red-500 font-bold py-2 px-4 rounded-md hover:bg-gray-200 transition-colors"
+            >
+              Entrar
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );
