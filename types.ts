@@ -34,3 +34,12 @@ export interface UserProfile {
   displayName: string | null;
   photoURL: string | null;
 }
+
+export interface AuthContextType {
+  currentUser: UserProfile | null;
+  loading: boolean;
+  signup: (email: string, password: string) => Promise<any>;
+  login: (email: string, password: string) => Promise<any>;
+  logout: () => Promise<void>;
+  googleSignIn: () => Promise<any>;
+}
