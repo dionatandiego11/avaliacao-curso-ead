@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+// Fix: Import firebase for User type and use v8 onAuthStateChanged
+import firebase from 'firebase/compat/app';
 import { auth } from '../firebase';
-import { UserProfile } from '../types';
+import type { UserProfile } from '../types';
 
 interface AuthContextType {
   currentUser: UserProfile | null;
@@ -17,7 +18,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
+    // Fix: Use v8 onAuthStateChanged method and firebase.User type
+    const unsubscribe = auth.onAuthStateChanged((user: firebase.User | null) => {
       if (user) {
         setCurrentUser({
           uid: user.uid,

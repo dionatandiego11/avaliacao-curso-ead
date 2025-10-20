@@ -1,5 +1,5 @@
 {
-  "name": "AvaliaEAD",
-  "description": "Uma plataforma para avaliações autênticas de estudantes sobre universidades, cursos e acomodações, construída com React e Tailwind CSS.",
+  "name": "AvaliaEAD - Course Review Platform",
+  "description": "A web application for students to read and write authentic reviews for university courses across Brazil. Find top-ranked courses and make informed decisions based on verified student experiences.",
   "requestFramePermissions": []
 }

@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+// Fix: Import firebase for serverTimestamp and use v8 firestore methods
+import firebase from 'firebase/compat/app';
 import StarRatingInput from '../components/StarRatingInput';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+
+// Fix: Define a strict type for rating categories to ensure type safety
+type RatingCategory = 'teachers' | 'curriculum' | 'infrastructure' | 'support' | 'market';
 
 const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
   const { currentUser } = useAuth();
@@ -14,7 +18,8 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
   const [isEAD, setIsEAD] = useState(true);
   const [anonymous, setAnonymous] = useState(false);
   
-  const [ratings, setRatings] = useState({
+  // Fix: Add explicit type to ratings state to solve type inference issues
+  const [ratings, setRatings] = useState<Record<RatingCategory, number>>({
     teachers: 0,
     curriculum: 0,
     infrastructure: 0,
@@ -39,13 +44,17 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
     );
   }
 
-  const handleRatingChange = (field: keyof typeof ratings, value: number) => {
+  // Fix: Use the strict RatingCategory type for the field parameter
+  const handleRatingChange = (field: RatingCategory, value: number) => {
     setRatings(prev => ({ ...prev, [field]: value }));
   };
 
+  // Fix: This function now works correctly due to the typed `ratings` state
   const calculateWeightedAverage = () => {
-    const total = Object.values(ratings).reduce((sum, rating) => sum + rating, 0);
-    const count = Object.values(ratings).filter(r => r > 0).length;
+    const ratingsValues = Object.values(ratings);
+    // FIX: Add explicit types for reduce and filter callback parameters to fix type errors.
+    const total = ratingsValues.reduce((sum: number, rating: number) => sum + rating, 0);
+    const count = ratingsValues.filter((r: number) => r > 0).length;
     return count > 0 ? total / count : 0;
   };
 
@@ -61,14 +70,15 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
     setSubmitting(true);
     
     try {
-      await addDoc(collection(db, 'reviews'), {
+      // Fix: Use v8 Firestore syntax
+      await db.collection('reviews').add({
         userId: currentUser.uid,
         university: university,
         course: course,
         graduationYear: graduationYear,
         isEAD: isEAD,
         anonymous: anonymous,
-        createdAt: serverTimestamp(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         teachersRating: ratings.teachers,
         curriculumRating: ratings.curriculum,
         infrastructureRating: ratings.infrastructure,
@@ -78,7 +88,7 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
         cons: cons,
         weightedAverage: calculateWeightedAverage(),
       });
-      onNavigate('home'); // Redirect to home or a "thank you" page
+      onNavigate('home');
     } catch (err) {
       console.error(err);
       setError('Ocorreu um erro ao enviar sua avaliação. Tente novamente.');
@@ -87,7 +97,8 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
     }
   };
   
-  const ratingCategories = [
+  // Fix: Use the strict RatingCategory type for the id property
+  const ratingCategories: { id: RatingCategory, label: string }[] = [
     { id: 'teachers', label: 'Corpo Docente' },
     { id: 'curriculum', label: 'Grade Curricular' },
     { id: 'infrastructure', label: 'Infraestrutura e Plataforma Online' },
@@ -141,7 +152,8 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
                 {ratingCategories.map(cat => (
                   <div key={cat.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
                     <label className="text-md font-medium text-gray-700 mb-2 sm:mb-0">{cat.label}</label>
-                    <StarRatingInput value={ratings[cat.id as keyof typeof ratings]} onChange={value => handleRatingChange(cat.id as keyof typeof ratings, value)} />
+                    {/* Fix: Remove type assertion as types are now correct */}
+                    <StarRatingInput value={ratings[cat.id]} onChange={value => handleRatingChange(cat.id, value)} />
                   </div>
                 ))}
               </div>

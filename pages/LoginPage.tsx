@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+// Fix: Import firebase for providers and use v8 auth methods
+import firebase from 'firebase/compat/app';
 import { auth } from '../firebase';
 
 const LoginPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
@@ -9,8 +10,9 @@ const LoginPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
   const [error, setError] = useState<string | null>(null);
 
   const handleGoogleSignIn = () => {
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider)
+    // Fix: Use v8 GoogleAuthProvider and signInWithPopup method
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
       .then(() => {
         onNavigate('home');
       }).catch((error) => {
@@ -22,11 +24,13 @@ const LoginPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
     e.preventDefault();
     setError(null);
     if (isLogin) {
-      signInWithEmailAndPassword(auth, email, password)
+      // Fix: Use v8 signInWithEmailAndPassword method signature
+      auth.signInWithEmailAndPassword(email, password)
         .then(() => onNavigate('home'))
         .catch((error) => setError(error.message));
     } else {
-      createUserWithEmailAndPassword(auth, email, password)
+      // Fix: Use v8 createUserWithEmailAndPassword method signature
+      auth.createUserWithEmailAndPassword(email, password)
         .then(() => onNavigate('home'))
         .catch((error) => setError(error.message));
     }

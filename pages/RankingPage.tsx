@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+// Fix: Remove v9 firestore imports
+// import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import type { CourseReviewSummary } from '../types';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -19,10 +21,10 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
             setIsLoading(true);
             setError(null);
             try {
-                const reviewsRef = collection(db, 'reviews');
-                // Fetch more documents to get a better ranking
-                const q = query(reviewsRef, orderBy('createdAt', 'desc'), limit(200));
-                const querySnapshot = await getDocs(q);
+                // Fix: Use v8 Firestore query syntax
+                const reviewsRef = db.collection('reviews');
+                const q = reviewsRef.orderBy('createdAt', 'desc').limit(200);
+                const querySnapshot = await q.get();
 
                 const reviews: any[] = [];
                 querySnapshot.forEach((doc) => {
@@ -34,7 +36,6 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
                     return;
                 }
 
-                // Aggregate reviews by course
                 const aggregated: Record<string, { university: string; course: string; totalScore: number; count: number; }> = {};
                 
                 for (const review of reviews) {
@@ -58,7 +59,6 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
                     reviewCount: item.count
                 }));
                 
-                // Sort by rating, then by review count
                 summarized.sort((a, b) => {
                     if (b.rating !== a.rating) {
                         return b.rating - a.rating;

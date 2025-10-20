@@ -1,23 +1,25 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import firebase from "firebase/compat/app";
+import "firebase/compat/firestore";
+import "firebase/compat/auth";
 
-// ATENÇÃO: Substitua o objeto a seguir pela configuração do seu projeto Firebase.
-// Você pode encontrar essa configuração no Console do Firebase, nas configurações do seu projeto.
+// Firebase configuration using placeholder values.
+// In a real project, these would be loaded from environment variables.
 const firebaseConfig = {
-  apiKey: "AIzaSy...YOUR_API_KEY",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "your-sender-id",
-  appId: "1:your-sender-id:web:your-app-id"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
-// Inicializa o Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
-// Inicializa os serviços do Firebase e obtém referências para eles
-const db = getFirestore(app);
-const auth = getAuth(app);
+// Initialize Firebase services and export them
+const db = firebase.firestore();
+const auth = firebase.auth();
 
 export { db, auth };

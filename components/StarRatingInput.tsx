@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 
 const StarIcon: React.FC<{ filled: boolean; [key: string]: any }> = ({ filled, ...props }) => (
@@ -22,7 +23,6 @@ const StarRatingInput: React.FC<{
     const stars = Array(count).fill(0);
 
     const handleClick = (newValue: number) => {
-        // Allow un-selecting by clicking the same star again
         if (newValue === value) {
             onChange(0);
         } else {

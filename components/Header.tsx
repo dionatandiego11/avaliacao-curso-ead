@@ -1,13 +1,15 @@
+
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { signOut } from 'firebase/auth';
+// Fix: signOut is a method on auth object in v8, so remove this import
 import { auth } from '../firebase';
 
 const Header: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
   const { currentUser } = useAuth();
 
   const handleLogout = () => {
-    signOut(auth).catch((error) => console.error("Logout failed", error));
+    // Fix: Use v8 auth.signOut() method
+    auth.signOut().catch((error) => console.error("Logout failed", error));
   };
 
   return (
