@@ -4,6 +4,7 @@ import Hero from './components/Hero';
 import FeaturedReviews from './components/FeaturedReviews';
 import Footer from './components/Footer';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import ReviewPage from './pages/ReviewPage';
 import RankingPage from './pages/RankingPage';
 import { AuthProvider } from './contexts/AuthContext';
@@ -28,6 +29,8 @@ function App() {
     switch (currentPage) {
       case 'login':
         return <LoginPage onNavigate={handleNavigate} />;
+      case 'register':
+        return <RegisterPage onNavigate={handleNavigate} />;
       case 'review':
         return <ReviewPage onNavigate={handleNavigate} />;
       case 'ranking':

@@ -23,17 +23,7 @@ const LoginPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
   const handleEmailPassword = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (isLogin) {
-      // Fix: Use v8 signInWithEmailAndPassword method signature
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => onNavigate('home'))
-        .catch((error) => setError(error.message));
-    } else {
-      // Fix: Use v8 createUserWithEmailAndPassword method signature
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(() => onNavigate('home'))
-        .catch((error) => setError(error.message));
-    }
+        onNavigate(isLogin ? 'home' : 'register');
   };
 
   return (
@@ -98,12 +88,12 @@ const LoginPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
           Continuar com Google
         </button>
 
-        <p className="text-center text-sm text-gray-600 mt-6">
-          {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}
-          <button onClick={() => setIsLogin(!isLogin)} className="font-bold text-red-500 hover:text-red-700 ml-1">
-            {isLogin ? 'Registre-se' : 'Entrar'}
-          </button>
-        </p>
+            <p className="text-center text-sm text-gray-600 mt-6">
+              Não tem uma conta?
+              <button onClick={() => onNavigate('register')} className="font-bold text-red-500 hover:text-red-700 ml-1">
+                Registre-se
+              </button>
+            </p>
       </div>
        <button onClick={() => onNavigate('home')} className="mt-4 text-gray-600 hover:text-gray-800 text-sm">Voltar para a página inicial</button>
     </div>
