@@ -6,7 +6,8 @@ import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
 import ReviewPage from './pages/ReviewPage';
 import RankingPage from './pages/RankingPage';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import GlobalLoader from './components/GlobalLoader';
 
 const HomePage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => (
   <>
@@ -16,13 +17,18 @@ const HomePage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate
   </>
 );
 
-function App() {
+const AppContent: React.FC = () => {
+  const { loading } = useAuth();
   const [currentPage, setCurrentPage] = useState('home');
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
   };
+
+  if (loading) {
+    return <GlobalLoader />;
+  }
   
   const renderPage = () => {
     switch (currentPage) {
@@ -41,10 +47,16 @@ function App() {
   };
 
   return (
+    <div className="App">
+      {renderPage()}
+    </div>
+  );
+};
+
+function App() {
+  return (
     <AuthProvider>
-      <div className="App">
-        {renderPage()}
-      </div>
+      <AppContent />
     </AuthProvider>
   );
 }
