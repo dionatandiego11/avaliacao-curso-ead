@@ -14,6 +14,7 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
   // Form state
   const [university, setUniversity] = useState('');
   const [course, setCourse] = useState('');
+  const [courseId, setCourseId] = useState<number | null>(null);
   const [graduationYear, setGraduationYear] = useState<number>(new Date().getFullYear());
   const [isEAD, setIsEAD] = useState(true);
   const [anonymous, setAnonymous] = useState(false);
@@ -38,7 +39,7 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
   // Dropdown options state
   const [cities, setCities] = useState<string[]>([]);
   const [universities, setUniversities] = useState<string[]>([]);
-  const [courses, setCourses] = useState<string[]>([]);
+  const [courses, setCourses] = useState<{ name: string, id: number }[]>([]);
   
   // Dropdown loading state
   const [citiesLoading, setCitiesLoading] = useState(false);
@@ -81,8 +82,15 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
     setCoursesLoading(true);
     try {
       const querySnapshot = await db.collection('cursos').where('NO_IES', '==', universityName).get();
-      const courseList = querySnapshot.docs.map(doc => doc.data().NO_CURSO as string);
-      const uniqueCourses = [...new Set(courseList)].sort();
+      const courseList = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return { name: data.NO_CURSO as string, id: data.CO_CURSO as number };
+      });
+
+      // Remove duplicates based on course name, preferring the one with a valid ID
+      const uniqueCourses = Array.from(new Map(courseList.map(item => [item.name, item])).values());
+      uniqueCourses.sort((a, b) => a.name.localeCompare(b.name));
+
       setCourses(uniqueCourses);
     } catch (err) {
       console.error('Erro ao buscar cursos:', err);
@@ -168,6 +176,14 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
   const handleUniversityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setUniversity(e.target.value);
     setCourse('');
+    setCourseId(null);
+  };
+
+  const handleCourseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedCourseName = e.target.value;
+    const selectedCourse = courses.find(c => c.name === selectedCourseName);
+    setCourse(selectedCourseName);
+    setCourseId(selectedCourse ? selectedCourse.id : null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -186,6 +202,7 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
         userId: currentUser.uid,
         university,
         course,
+        CO_CURSO: courseId,
         graduationYear,
         isEAD,
         anonymous,
@@ -257,9 +274,9 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
                 </div>
                 <div>
                   <label htmlFor="course" className="block text-sm font-medium text-gray-700 mb-1">Nome do Curso *</label>
-                  <select id="course" value={course} onChange={e => setCourse(e.target.value)} disabled={!university || coursesLoading} required className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-red focus:border-brand-red disabled:bg-gray-100">
+                  <select id="course" value={course} onChange={handleCourseChange} disabled={!university || coursesLoading} required className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-red focus:border-brand-red disabled:bg-gray-100">
                         <option value="">{coursesLoading ? 'Carregando...' : 'Selecione o curso'}</option>
-                        {courses.map(c => <option key={c} value={c}>{c}</option>)}
+                        {courses.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                     </select>
                 </div>
                 <div>
