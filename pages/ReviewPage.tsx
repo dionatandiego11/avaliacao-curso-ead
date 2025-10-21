@@ -1,24 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
-// Fix: Import firebase for serverTimestamp and use v8 firestore methods
 import firebase from 'firebase/compat/app';
 import StarRatingInput from '../components/StarRatingInput';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-// Fix: Define a strict type for rating categories to ensure type safety
 type RatingCategory = 'teachers' | 'curriculum' | 'infrastructure' | 'support' | 'market';
 
 const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
   const { currentUser } = useAuth();
+  
+  // Form state
   const [university, setUniversity] = useState('');
   const [course, setCourse] = useState('');
   const [graduationYear, setGraduationYear] = useState<number>(new Date().getFullYear());
   const [isEAD, setIsEAD] = useState(true);
   const [anonymous, setAnonymous] = useState(false);
-  
-  // Fix: Add explicit type to ratings state to solve type inference issues
   const [ratings, setRatings] = useState<Record<RatingCategory, number>>({
     teachers: 0,
     curriculum: 0,
@@ -26,36 +24,150 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
     support: 0,
     market: 0,
   });
-
   const [pros, setPros] = useState('');
   const [cons, setCons] = useState('');
+  
+  // UI State
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Dropdown selection state
+  const [selectedState, setSelectedState] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+
+  // Dropdown options state
+  const [cities, setCities] = useState<string[]>([]);
+  const [universities, setUniversities] = useState<string[]>([]);
+  const [courses, setCourses] = useState<string[]>([]);
+  
+  // Dropdown loading state
+  const [citiesLoading, setCitiesLoading] = useState(false);
+  const [unisLoading, setUnisLoading] = useState(false);
+  const [coursesLoading, setCoursesLoading] = useState(false);
+
+  const states = [ 'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO' ];
+
+  const fetchCities = useCallback(async (state: string) => {
+    setCitiesLoading(true);
+    try {
+      const querySnapshot = await db.collection('cursos').where('SG_UF_IES', '==', state).get();
+      const cityList = querySnapshot.docs.map(doc => doc.data().NO_MUNICIPIO_IES as string);
+      const uniqueCities = [...new Set(cityList)].sort();
+      setCities(uniqueCities);
+    } catch (err) {
+      console.error('Erro ao buscar cidades:', err);
+      setCities([]);
+    } finally {
+      setCitiesLoading(false);
+    }
+  }, []);
+
+  const fetchUniversities = useCallback(async (state: string, city: string) => {
+    setUnisLoading(true);
+    try {
+        const querySnapshot = await db.collection('cursos').where('SG_UF_IES', '==', state).where('NO_MUNICIPIO_IES', '==', city).get();
+        const uniList = querySnapshot.docs.map(doc => doc.data().NO_IES as string);
+        const uniqueUnis = [...new Set(uniList)].sort();
+        setUniversities(uniqueUnis);
+    } catch (err) {
+        console.error('Erro ao buscar universidades:', err);
+        setUniversities([]);
+    } finally {
+        setUnisLoading(false);
+    }
+  }, []);
+
+  const fetchCourses = useCallback(async (universityName: string) => {
+    setCoursesLoading(true);
+    try {
+      const querySnapshot = await db.collection('cursos').where('NO_IES', '==', universityName).get();
+      const courseList = querySnapshot.docs.map(doc => doc.data().NO_CURSO as string);
+      const uniqueCourses = [...new Set(courseList)].sort();
+      setCourses(uniqueCourses);
+    } catch (err) {
+      console.error('Erro ao buscar cursos:', err);
+      setCourses([]);
+    } finally {
+      setCoursesLoading(false);
+    }
+  }, []);
+  
+  useEffect(() => {
+    if (currentUser) {
+        const fetchUserData = async () => {
+            try {
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    if (userData) {
+                        setSelectedState(userData.state || '');
+                        setSelectedCity(userData.city || '');
+                        setUniversity(userData.university || '');
+                        setCourse(userData.course || '');
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching user data for pre-fill:", err);
+            }
+        };
+        fetchUserData();
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (selectedState) { fetchCities(selectedState); } 
+    else { setCities([]); }
+  }, [selectedState, fetchCities]);
+
+  useEffect(() => {
+    if (selectedState && selectedCity) { fetchUniversities(selectedState, selectedCity); } 
+    else { setUniversities([]); }
+  }, [selectedState, selectedCity, fetchUniversities]);
+  
+  useEffect(() => {
+    if (university) { fetchCourses(university); } 
+    else { setCourses([]); }
+  }, [university, fetchCourses]);
 
   if (!currentUser) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
         <h2 className="text-2xl font-bold mb-4">Acesso Negado</h2>
         <p className="mb-4">Você precisa estar logado para deixar uma avaliação.</p>
-        <button onClick={() => onNavigate('login')} className="bg-red-500 text-white font-bold py-2 px-4 rounded hover:bg-red-600">
+        <button onClick={() => onNavigate('login')} className="bg-brand-red text-white font-bold py-2 px-4 rounded hover:bg-red-600">
           Fazer Login
         </button>
       </div>
     );
   }
 
-  // Fix: Use the strict RatingCategory type for the field parameter
   const handleRatingChange = (field: RatingCategory, value: number) => {
     setRatings(prev => ({ ...prev, [field]: value }));
   };
 
-  // Fix: This function now works correctly due to the typed `ratings` state
   const calculateWeightedAverage = () => {
     const ratingsValues = Object.values(ratings);
-    // FIX: Add explicit types for reduce and filter callback parameters to fix type errors.
     const total = ratingsValues.reduce((sum: number, rating: number) => sum + rating, 0);
     const count = ratingsValues.filter((r: number) => r > 0).length;
     return count > 0 ? total / count : 0;
+  };
+  
+  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedState(e.target.value);
+    setSelectedCity('');
+    setUniversity('');
+    setCourse('');
+  };
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCity(e.target.value);
+    setUniversity('');
+    setCourse('');
+  };
+  
+  const handleUniversityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setUniversity(e.target.value);
+    setCourse('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,22 +182,21 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
     setSubmitting(true);
     
     try {
-      // Fix: Use v8 Firestore syntax
       await db.collection('reviews').add({
         userId: currentUser.uid,
-        university: university,
-        course: course,
-        graduationYear: graduationYear,
-        isEAD: isEAD,
-        anonymous: anonymous,
+        university,
+        course,
+        graduationYear,
+        isEAD,
+        anonymous,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         teachersRating: ratings.teachers,
         curriculumRating: ratings.curriculum,
         infrastructureRating: ratings.infrastructure,
         supportRating: ratings.support,
         marketReputationRating: ratings.market,
-        pros: pros,
-        cons: cons,
+        pros,
+        cons,
         weightedAverage: calculateWeightedAverage(),
       });
       onNavigate('home');
@@ -97,7 +208,6 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
     }
   };
   
-  // Fix: Use the strict RatingCategory type for the id property
   const ratingCategories: { id: RatingCategory, label: string }[] = [
     { id: 'teachers', label: 'Corpo Docente' },
     { id: 'curriculum', label: 'Grade Curricular' },
@@ -125,22 +235,42 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
               <h2 className="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Sobre o Curso</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
+                  <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">Estado *</label>
+                  <select id="state" value={selectedState} onChange={handleStateChange} required className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-red focus:border-brand-red">
+                      <option value="">Selecione o estado</option>
+                      {states.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">Cidade/Polo *</label>
+                    <select id="city" value={selectedCity} onChange={handleCityChange} disabled={!selectedState || citiesLoading} required className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-red focus:border-brand-red disabled:bg-gray-100">
+                        <option value="">{citiesLoading ? 'Carregando...' : 'Selecione a cidade'}</option>
+                        {cities.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                </div>
+                <div>
                   <label htmlFor="university" className="block text-sm font-medium text-gray-700 mb-1">Nome da Universidade *</label>
-                  <input type="text" id="university" value={university} onChange={e => setUniversity(e.target.value)} required className="w-full border-gray-300 rounded-md shadow-sm"/>
+                   <select id="university" value={university} onChange={handleUniversityChange} disabled={!selectedCity || unisLoading} required className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-red focus:border-brand-red disabled:bg-gray-100">
+                        <option value="">{unisLoading ? 'Carregando...' : 'Selecione a universidade'}</option>
+                        {universities.map(u => <option key={u} value={u}>{u}</option>)}
+                    </select>
                 </div>
                 <div>
                   <label htmlFor="course" className="block text-sm font-medium text-gray-700 mb-1">Nome do Curso *</label>
-                  <input type="text" id="course" value={course} onChange={e => setCourse(e.target.value)} required className="w-full border-gray-300 rounded-md shadow-sm"/>
+                  <select id="course" value={course} onChange={e => setCourse(e.target.value)} disabled={!university || coursesLoading} required className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-red focus:border-brand-red disabled:bg-gray-100">
+                        <option value="">{coursesLoading ? 'Carregando...' : 'Selecione o curso'}</option>
+                        {courses.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
                 </div>
                 <div>
                   <label htmlFor="graduationYear" className="block text-sm font-medium text-gray-700 mb-1">Ano de Conclusão</label>
-                  <input type="number" id="graduationYear" value={graduationYear} onChange={e => setGraduationYear(parseInt(e.target.value))} className="w-full border-gray-300 rounded-md shadow-sm"/>
+                  <input type="number" id="graduationYear" value={graduationYear} onChange={e => setGraduationYear(parseInt(e.target.value))} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-red focus:border-brand-red"/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Modalidade</label>
                   <div className="flex items-center space-x-4">
-                     <label className="flex items-center"><input type="radio" name="modality" checked={isEAD} onChange={() => setIsEAD(true)} className="mr-2"/> EAD</label>
-                     <label className="flex items-center"><input type="radio" name="modality" checked={!isEAD} onChange={() => setIsEAD(false)} className="mr-2"/> Presencial</label>
+                     <label className="flex items-center"><input type="radio" name="modality" checked={isEAD} onChange={() => setIsEAD(true)} className="mr-2 text-brand-red focus:ring-brand-orange"/> EAD</label>
+                     <label className="flex items-center"><input type="radio" name="modality" checked={!isEAD} onChange={() => setIsEAD(false)} className="mr-2 text-brand-red focus:ring-brand-orange"/> Presencial</label>
                   </div>
                 </div>
               </div>
@@ -152,7 +282,6 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
                 {ratingCategories.map(cat => (
                   <div key={cat.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
                     <label className="text-md font-medium text-gray-700 mb-2 sm:mb-0">{cat.label}</label>
-                    {/* Fix: Remove type assertion as types are now correct */}
                     <StarRatingInput value={ratings[cat.id]} onChange={value => handleRatingChange(cat.id, value)} />
                   </div>
                 ))}
@@ -163,18 +292,18 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
               <h2 className="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Comentários</h2>
               <div>
                 <label htmlFor="pros" className="block text-sm font-medium text-gray-700 mb-1">Pontos Positivos</label>
-                <textarea id="pros" value={pros} onChange={e => setPros(e.target.value)} rows={3} className="w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                <textarea id="pros" value={pros} onChange={e => setPros(e.target.value)} rows={3} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-red focus:border-brand-red"></textarea>
               </div>
               <div className="mt-4">
                 <label htmlFor="cons" className="block text-sm font-medium text-gray-700 mb-1">Pontos a Melhorar</label>
-                <textarea id="cons" value={cons} onChange={e => setCons(e.target.value)} rows={3} className="w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                <textarea id="cons" value={cons} onChange={e => setCons(e.target.value)} rows={3} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-red focus:border-brand-red"></textarea>
               </div>
             </section>
             
             <section className="mb-8">
                <div className="flex items-start">
                   <div className="flex items-center h-5">
-                    <input id="anonymous" name="anonymous" type="checkbox" checked={anonymous} onChange={e => setAnonymous(e.target.checked)} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" />
+                    <input id="anonymous" name="anonymous" type="checkbox" checked={anonymous} onChange={e => setAnonymous(e.target.checked)} className="h-4 w-4 text-brand-red border-gray-300 rounded focus:ring-brand-orange" />
                   </div>
                   <div className="ml-3 text-sm">
                     <label htmlFor="anonymous" className="font-medium text-gray-700">Publicar como anônimo</label>
@@ -186,7 +315,7 @@ const ReviewPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNaviga
             {error && <p className="text-red-600 text-center mb-4">{error}</p>}
 
             <div className="text-center">
-              <button type="submit" disabled={submitting} className="bg-red-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400">
+              <button type="submit" disabled={submitting} className="bg-brand-red text-white font-bold py-3 px-8 rounded-lg hover:bg-red-600 transition-colors disabled:bg-gray-400">
                 {submitting ? 'Enviando...' : 'Enviar Avaliação'}
               </button>
             </div>

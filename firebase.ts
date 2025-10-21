@@ -2,24 +2,25 @@ import firebase from "firebase/compat/app";
 import "firebase/compat/firestore";
 import "firebase/compat/auth";
 
-// Firebase configuration. Prefer Vite environment variables (VITE_*) for local/CI setup.
-// Values fall back to the inline config for compatibility if env vars are not provided.
+const env = (import.meta as any).env || {};
+
+// Firebase configuration using environment variables with fallbacks for environments where import.meta.env is not defined.
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDxwGQPyOB8rYC1rrCtwUGSE-evevah0Uo",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "avaliaead-f5a98.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "avaliaead-f5a98",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "avaliaead-f5a98.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "587076153149",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:587076153149:web:03f96821220a344af21f54",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-4XHNBT0TFY",
+  apiKey: env.VITE_FIREBASE_API_KEY || "AIzaSyBgUsSU2tg9QipXbb_Z3EJAyLJaVozO8cs",
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "avalia-ead.firebaseapp.com",
+  projectId: env.VITE_FIREBASE_PROJECT_ID || "avalia-ead",
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "avalia-ead.firebasestorage.app",
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "506573215379",
+  appId: env.VITE_FIREBASE_APP_ID || "1:506573215379:web:3aeab983473d0f4696df66",
+  measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || "G-LZ5DR094B1",
 };
 
-// Initialize Firebase
+
+// Initialize Firebase only if it hasn't been initialized yet.
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
-// Initialize Firebase services and export them
 const db = firebase.firestore();
 const auth = firebase.auth();
 

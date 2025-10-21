@@ -29,7 +29,7 @@ const Hero: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) 
         className="absolute inset-0 bg-cover bg-center" 
         style={{backgroundImage: "url('https://picsum.photos/1600/900?grayscale&blur=2')"}}
       ></div>
-      <div className="absolute inset-0 bg-gradient-to-r from-[#e93c24] to-[#f56642] opacity-90"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-brand-red to-brand-orange opacity-90"></div>
       
       <div className="relative">
         <Header onNavigate={onNavigate} />
@@ -58,7 +58,7 @@ const Hero: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) 
                 placeholder="Digite o que você procura..." 
                 className="w-full p-3 text-gray-800 focus:outline-none bg-transparent"
               />
-              <button className="bg-red-500 text-white font-bold py-3 px-6 rounded-md hover:bg-red-600 transition-colors flex items-center">
+              <button className="bg-brand-red text-white font-bold py-3 px-6 rounded-md hover:bg-red-600 transition-colors flex items-center">
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                   Buscar
               </button>

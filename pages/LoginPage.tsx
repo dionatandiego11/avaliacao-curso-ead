@@ -1,16 +1,15 @@
+
 import React, { useState } from 'react';
-// Fix: Import firebase for providers and use v8 auth methods
 import firebase from 'firebase/compat/app';
 import { auth } from '../firebase';
 
 const LoginPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = () => {
-    // Fix: Use v8 GoogleAuthProvider and signInWithPopup method
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider)
       .then(() => {
@@ -23,7 +22,21 @@ const LoginPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
   const handleEmailPassword = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-        onNavigate(isLogin ? 'home' : 'register');
+    setLoading(true);
+    auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+            onNavigate('home');
+        })
+        .catch((error) => {
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                setError('Email ou senha inválidos.');
+            } else {
+                setError('Ocorreu um erro ao fazer login.');
+            }
+        })
+        .finally(() => {
+            setLoading(false);
+        });
   };
 
   return (
@@ -32,7 +45,7 @@ const LoginPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
         <div className="flex justify-center mb-6">
           <span className="font-extrabold text-2xl tracking-wider text-gray-800">AVALIA<span className="font-light">EAD</span></span>
         </div>
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">{isLogin ? 'Entrar na sua conta' : 'Criar uma conta'}</h2>
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Entrar na sua conta</h2>
         <p className="text-center text-gray-500 mb-6">Bem-vindo de volta!</p>
 
         {error && <p className="bg-red-100 text-red-700 p-3 rounded-md mb-4 text-sm">{error}</p>}
@@ -69,9 +82,10 @@ const LoginPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
           <div className="flex items-center justify-between">
             <button 
               type="submit" 
-              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+              disabled={loading}
+              className="bg-brand-red hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full disabled:bg-gray-400"
             >
-              {isLogin ? 'Entrar' : 'Registrar'}
+              {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </div>
         </form>
@@ -88,12 +102,12 @@ const LoginPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
           Continuar com Google
         </button>
 
-            <p className="text-center text-sm text-gray-600 mt-6">
-              Não tem uma conta?
-              <button onClick={() => onNavigate('register')} className="font-bold text-red-500 hover:text-red-700 ml-1">
-                Registre-se
-              </button>
-            </p>
+        <p className="text-center text-sm text-gray-600 mt-6">
+          Não tem uma conta?
+          <button onClick={() => onNavigate('register')} className="font-bold text-brand-red hover:text-red-700 ml-1">
+            Registre-se
+          </button>
+        </p>
       </div>
        <button onClick={() => onNavigate('home')} className="mt-4 text-gray-600 hover:text-gray-800 text-sm">Voltar para a página inicial</button>
     </div>

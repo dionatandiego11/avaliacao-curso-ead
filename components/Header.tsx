@@ -1,14 +1,12 @@
 
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-// Fix: signOut is a method on auth object in v8, so remove this import
 import { auth } from '../firebase';
 
 const Header: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
   const { currentUser } = useAuth();
 
   const handleLogout = () => {
-    // Fix: Use v8 auth.signOut() method
     auth.signOut().catch((error) => console.error("Logout failed", error));
   };
 
@@ -38,7 +36,7 @@ const Header: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }
               <span className="text-white hidden sm:block">{currentUser.displayName || currentUser.email}</span>
               <button 
                 onClick={handleLogout}
-                className="bg-white text-red-500 font-bold py-2 px-4 rounded-md hover:bg-gray-200 transition-colors text-sm"
+                className="bg-white text-brand-red font-bold py-2 px-4 rounded-md hover:bg-gray-200 transition-colors text-sm"
               >
                 Sair
               </button>
@@ -46,7 +44,7 @@ const Header: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }
           ) : (
             <button 
               onClick={() => onNavigate('login')}
-              className="bg-white text-red-500 font-bold py-2 px-4 rounded-md hover:bg-gray-200 transition-colors"
+              className="bg-white text-brand-red font-bold py-2 px-4 rounded-md hover:bg-gray-200 transition-colors"
             >
               Entrar
             </button>

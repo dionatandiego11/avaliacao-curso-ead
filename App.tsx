@@ -1,21 +1,11 @@
 
 import React, { useState } from 'react';
-import Hero from './components/Hero';
-import FeaturedReviews from './components/FeaturedReviews';
-import Footer from './components/Footer';
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ReviewPage from './pages/ReviewPage';
 import RankingPage from './pages/RankingPage';
 import { AuthProvider } from './contexts/AuthContext';
-
-const HomePage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => (
-  <>
-    <Hero onNavigate={onNavigate} />
-    <FeaturedReviews />
-    <Footer />
-  </>
-);
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');

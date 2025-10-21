@@ -1,5 +1,5 @@
 {
-  "name": "AvaliaEAD - Course Review Platform",
-  "description": "A web application for students to read and write authentic reviews for university courses across Brazil. Find top-ranked courses and make informed decisions based on verified student experiences.",
+  "name": "AvaliaEAD",
+  "description": "A web platform for students to read and write authentic reviews about universities and courses in Brazil. It helps prospective students make informed decisions based on verified, real-world experiences.",
   "requestFramePermissions": []
 }

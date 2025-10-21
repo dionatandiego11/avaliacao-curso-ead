@@ -1,8 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-// Fix: Remove v9 firestore imports
-// import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import type { CourseReviewSummary } from '../types';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -21,7 +19,6 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
             setIsLoading(true);
             setError(null);
             try {
-                // Fix: Use v8 Firestore query syntax
                 const reviewsRef = db.collection('reviews');
                 const q = reviewsRef.orderBy('createdAt', 'desc').limit(200);
                 const querySnapshot = await q.get();
@@ -39,6 +36,7 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
                 const aggregated: Record<string, { university: string; course: string; totalScore: number; count: number; }> = {};
                 
                 for (const review of reviews) {
+                    if(!review.university || !review.course) continue;
                     const key = `${review.university}-${review.course}`.toLowerCase();
                     if (!aggregated[key]) {
                         aggregated[key] = {
@@ -79,7 +77,7 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
     }, []);
     
     return (
-        <div className="bg-gray-100 min-h-screen">
+        <div className="bg-gray-100 min-h-screen flex flex-col">
             <div className="relative bg-gray-800 text-white">
                 <div className="relative">
                     <Header onNavigate={onNavigate} />
@@ -90,7 +88,7 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
                 </div>
             </div>
             
-            <main className="container mx-auto p-6 -mt-10">
+            <main className="container mx-auto p-6 -mt-10 flex-grow">
                 <div className="bg-white rounded-lg shadow-xl p-8 max-w-4xl mx-auto">
                     {isLoading && <p className="text-center text-gray-600">Carregando rankings...</p>}
                     {error && <p className="text-center text-red-600">{error}</p>}
