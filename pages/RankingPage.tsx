@@ -10,53 +10,64 @@ const StarIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) =
 );
 
 const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
-    const [courses, setCourses] = useState<CourseReviewSummary[]>([]);
+    const [allCourses, setAllCourses] = useState<CourseReviewSummary[]>([]);
+    const [filteredCourses, setFilteredCourses] = useState<CourseReviewSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Filter states
+    const [filterArea, setFilterArea] = useState('');
+    const [filterGratis, setFilterGratis] = useState<boolean | null>(null);
+    const [filterGrau, setFilterGrau] = useState('');
+    const [filterUF, setFilterUF] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+
     useEffect(() => {
+        // TODO: This data fetching and aggregation is done on the client-side, which is not scalable.
+        // A better approach would be to use a Cloud Function to perform the aggregation on the backend
+        // and only fetch the aggregated data on the client.
         const fetchRankings = async () => {
             setIsLoading(true);
             setError(null);
             try {
-                const reviewsRef = db.collection('reviews');
-                const q = reviewsRef.orderBy('createdAt', 'desc').limit(200);
-                const querySnapshot = await q.get();
+                // 1. Fetch all reviews
+                const reviewsSnapshot = await db.collection('reviews').orderBy('createdAt', 'desc').get();
+                const reviews = reviewsSnapshot.docs.map(doc => doc.data());
 
-                const reviews: any[] = [];
-                querySnapshot.forEach((doc) => {
-                    reviews.push(doc.data());
+                // 2. Aggregate review data
+                const reviewStats: Record<string, { totalScore: number; count: number }> = {};
+                for (const review of reviews) {
+                    if (!review.CO_CURSO) continue;
+                    const key = String(review.CO_CURSO);
+                    if (!reviewStats[key]) {
+                        reviewStats[key] = { totalScore: 0, count: 0 };
+                    }
+                    reviewStats[key].totalScore += review.weightedAverage;
+                    reviewStats[key].count += 1;
+                }
+
+                // 3. Fetch all courses
+                const coursesSnapshot = await db.collection('cursos').get();
+                const allCourses = coursesSnapshot.docs.map(doc => doc.data());
+                
+                // 4. Combine course data with review stats
+                const summarized = allCourses.map(course => {
+                    const stats = reviewStats[String(course.CO_CURSO)];
+                    return {
+                        CO_CURSO: course.CO_CURSO,
+                        university: course.NO_IES,
+                        course: course.NO_CURSO,
+                        rating: stats ? stats.totalScore / stats.count : 0,
+                        reviewCount: stats ? stats.count : 0,
+                        city: course.NO_MUNICIPIO_IES,
+                        uf: course.SG_UF_IES,
+                        isFree: course.IN_GRATUITO === 1,
+                        area: course.NO_CINE_AREA_GERAL,
+                        degree: course.TP_GRAU_ACADEMICO,
+                    };
                 });
 
-                if (reviews.length === 0) {
-                    setCourses([]);
-                    return;
-                }
-
-                const aggregated: Record<string, { university: string; course: string; totalScore: number; count: number; }> = {};
-                
-                for (const review of reviews) {
-                    if(!review.university || !review.course) continue;
-                    const key = `${review.university}-${review.course}`.toLowerCase();
-                    if (!aggregated[key]) {
-                        aggregated[key] = {
-                            university: review.university,
-                            course: review.course,
-                            totalScore: 0,
-                            count: 0
-                        };
-                    }
-                    aggregated[key].totalScore += review.weightedAverage;
-                    aggregated[key].count += 1;
-                }
-
-                const summarized = Object.values(aggregated).map(item => ({
-                    university: item.university,
-                    course: item.course,
-                    rating: item.totalScore / item.count,
-                    reviewCount: item.count
-                }));
-                
+                // 5. Sort the combined list
                 summarized.sort((a, b) => {
                     if (b.rating !== a.rating) {
                         return b.rating - a.rating;
@@ -64,7 +75,9 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
                     return b.reviewCount - a.reviewCount;
                 });
                 
-                setCourses(summarized);
+                setAllCourses(summarized);
+                setFilteredCourses(summarized);
+
             } catch (err) {
                 console.error("Error fetching rankings: ", err);
                 setError("Não foi possível carregar os rankings. Tente novamente mais tarde.");
@@ -75,7 +88,37 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
 
         fetchRankings();
     }, []);
+
+    useEffect(() => {
+        let updatedCourses = [...allCourses];
+
+        if (filterGratis !== null) {
+            updatedCourses = updatedCourses.filter(c => c.isFree === filterGratis);
+        }
+        if (filterUF) {
+            updatedCourses = updatedCourses.filter(c => c.uf === filterUF);
+        }
+        if (filterArea) {
+            updatedCourses = updatedCourses.filter(c => c.area === filterArea);
+        }
+        if (filterGrau) {
+            updatedCourses = updatedCourses.filter(c => String(c.degree) === filterGrau);
+        }
+        if (searchTerm) {
+            const lowercasedTerm = searchTerm.toLowerCase();
+            updatedCourses = updatedCourses.filter(c =>
+                c.course.toLowerCase().includes(lowercasedTerm) ||
+                c.university.toLowerCase().includes(lowercasedTerm)
+            );
+        }
+
+        setFilteredCourses(updatedCourses);
+    }, [filterArea, filterGratis, filterGrau, filterUF, searchTerm, allCourses]);
     
+    const ufs = [...new Set(allCourses.map(c => c.uf))].sort();
+    const areas = [...new Set(allCourses.map(c => c.area))].sort();
+    const degrees = [...new Set(allCourses.map(c => c.degree))].sort();
+
     return (
         <div className="bg-gray-100 min-h-screen flex flex-col">
             <div className="relative bg-gray-800 text-white">
@@ -89,11 +132,42 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
             </div>
             
             <main className="container mx-auto p-6 -mt-10 flex-grow">
-                <div className="bg-white rounded-lg shadow-xl p-8 max-w-4xl mx-auto">
+                <div className="bg-white rounded-lg shadow-xl p-8 max-w-6xl mx-auto">
+
+                    {/* Filters */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <input
+                            type="text"
+                            placeholder="Buscar por curso ou universidade..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="p-2 border rounded col-span-1 md:col-span-3"
+                        />
+                        <select value={filterUF} onChange={e => setFilterUF(e.target.value)} className="p-2 border rounded">
+                            <option value="">Todos os Estados</option>
+                            {ufs.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                        </select>
+                         <select value={filterArea} onChange={e => setFilterArea(e.target.value)} className="p-2 border rounded">
+                            <option value="">Todas as Áreas</option>
+                            {areas.map(area => <option key={area} value={area}>{area}</option>)}
+                        </select>
+                        <select value={filterGrau} onChange={e => setFilterGrau(e.target.value)} className="p-2 border rounded">
+                            <option value="">Todos os Graus</option>
+                            {degrees.map(degree => <option key={degree} value={degree}>{degree}</option>)}
+                        </select>
+                        <select onChange={e => setFilterGratis(e.target.value === '' ? null : e.target.value === 'true')} className="p-2 border rounded">
+                            <option value="">Gratuito ou Pago</option>
+                            <option value="true">Gratuito</option>
+                            <option value="false">Pago</option>
+                        </select>
+                         <button onClick={() => { setSearchTerm(''); setFilterUF(''); setFilterGratis(null); setFilterArea(''); setFilterGrau(''); }} className="p-2 bg-gray-300 rounded col-span-1 md:col-span-3">Limpar Filtros</button>
+                    </div>
+
+
                     {isLoading && <p className="text-center text-gray-600">Carregando rankings...</p>}
                     {error && <p className="text-center text-red-600">{error}</p>}
                     {!isLoading && !error && (
-                        courses.length > 0 ? (
+                        filteredCourses.length > 0 ? (
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
@@ -101,16 +175,19 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Curso</th>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Universidade</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Localização</th>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avaliação</th>
                                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nº de Avaliações</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modalidade</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {courses.map((course, index) => (
-                                            <tr key={`${course.university}-${course.course}`} className="hover:bg-gray-50">
+                                        {filteredCourses.map((course, index) => (
+                                            <tr key={course.CO_CURSO} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{index + 1}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{course.course}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.university}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{`${course.city}, ${course.uf}`}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     <div className="flex items-center">
                                                         <StarIcon className="w-5 h-5 text-yellow-400 mr-1" />
@@ -118,6 +195,11 @@ const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavig
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.reviewCount}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${course.isFree ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                                        {course.isFree ? 'Gratuito' : 'Pago'}
+                                                    </span>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

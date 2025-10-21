@@ -23,10 +23,16 @@ export interface Review {
 }
 
 export interface CourseReviewSummary {
+  CO_CURSO: number;
   university: string;
   course: string;
   rating: number;
   reviewCount: number;
+  city: string;
+  uf: string;
+  isFree: boolean;
+  area: string;
+  degree: string;
 }
 
 export interface UserProfile {
