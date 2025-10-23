@@ -1,27 +1,22 @@
-import firebase from "firebase/compat/app";
-import "firebase/compat/firestore";
-import "firebase/compat/auth";
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
-const env = (import.meta as any).env || {};
-
-// Firebase configuration using environment variables with fallbacks for environments where import.meta.env is not defined.
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || "AIzaSyBgUsSU2tg9QipXbb_Z3EJAyLJaVozO8cs",
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "avalia-ead.firebaseapp.com",
-  projectId: env.VITE_FIREBASE_PROJECT_ID || "avalia-ead",
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "avalia-ead.firebasestorage.app",
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "506573215379",
-  appId: env.VITE_FIREBASE_APP_ID || "1:506573215379:web:3aeab983473d0f4696df66",
-  measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || "G-LZ5DR094B1",
+  apiKey: "AIzaSyBgUsSU2tg9QipXbb_Z3EJAyLJaVozO8cs",
+  authDomain: "avalia-ead.firebaseapp.com",
+  projectId: "avalia-ead",
+  storageBucket: "avalia-ead.firebasestorage.app",
+  messagingSenderId: "506573215379",
+  appId: "1:506573215379:web:3aeab983473d0f4696df66",
+  measurementId: "G-LZ5DR094B1"
 };
 
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase only if it hasn't been initialized yet.
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-
-const db = firebase.firestore();
-const auth = firebase.auth();
-
-export { db, auth };
+// Export Firebase services
+export const auth = getAuth(app);
+export const db = getFirestore(app);

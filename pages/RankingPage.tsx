@@ -1,218 +1,189 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import GridIcon from '../components/icons/GridIcon';
+import StarIcon from '../components/icons/StarIcon';
 import { db } from '../firebase';
-import type { CourseReviewSummary } from '../types';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import { collection, getDocs } from 'firebase/firestore';
 
-const StarIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-    <svg className={className} fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-);
+interface RankingPageProps {
+  onNavigate: (page: string) => void;
+}
 
-const RankingPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
-    const [allCourses, setAllCourses] = useState<CourseReviewSummary[]>([]);
-    const [filteredCourses, setFilteredCourses] = useState<CourseReviewSummary[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+interface Course {
+    id: string;
+    nome: string;
+    ies: string;
+    uf: string;
+    media: number;
+    avaliacoes: number;
+    area: string;
+    grau: string;
+    tipo: string;
+}
 
-    // Filter states
-    const [filterArea, setFilterArea] = useState('');
-    const [filterGratis, setFilterGratis] = useState<boolean | null>(null);
-    const [filterGrau, setFilterGrau] = useState('');
-    const [filterUF, setFilterUF] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
+const ITEMS_PER_PAGE = 9;
+
+const RankingPage: React.FC<RankingPageProps> = ({ onNavigate }) => {
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({
+        uf: 'all',
+        area: 'all',
+        grau: 'all',
+        tipo: 'all'
+    });
+    const [sortBy, setSortBy] = useState('media');
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
-        // TODO: This data fetching and aggregation is done on the client-side, which is not scalable.
-        // A better approach would be to use a Cloud Function to perform the aggregation on the backend
-        // and only fetch the aggregated data on the client.
-        const fetchRankings = async () => {
-            setIsLoading(true);
-            setError(null);
+        const fetchCourses = async () => {
+            setLoading(true);
             try {
-                // 1. Fetch all reviews
-                const reviewsSnapshot = await db.collection('reviews').orderBy('createdAt', 'desc').get();
-                const reviews = reviewsSnapshot.docs.map(doc => doc.data());
-
-                // 2. Aggregate review data
-                const reviewStats: Record<string, { totalScore: number; count: number }> = {};
-                for (const review of reviews) {
-                    if (!review.CO_CURSO) continue;
-                    const key = String(review.CO_CURSO);
-                    if (!reviewStats[key]) {
-                        reviewStats[key] = { totalScore: 0, count: 0 };
-                    }
-                    reviewStats[key].totalScore += review.weightedAverage;
-                    reviewStats[key].count += 1;
-                }
-
-                // 3. Fetch all courses
-                const coursesSnapshot = await db.collection('cursos').get();
-                const allCourses = coursesSnapshot.docs.map(doc => doc.data());
-                
-                // 4. Combine course data with review stats
-                const summarized = allCourses.map(course => {
-                    const stats = reviewStats[String(course.CO_CURSO)];
+                const querySnapshot = await getDocs(collection(db, "cursos"));
+                const coursesData = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
                     return {
-                        CO_CURSO: course.CO_CURSO,
-                        university: course.NO_IES,
-                        course: course.NO_CURSO,
-                        rating: stats ? stats.totalScore / stats.count : 0,
-                        reviewCount: stats ? stats.count : 0,
-                        city: course.NO_MUNICIPIO_IES,
-                        uf: course.SG_UF_IES,
-                        isFree: course.IN_GRATUITO === 1,
-                        area: course.NO_CINE_AREA_GERAL,
-                        degree: course.TP_GRAU_ACADEMICO,
+                        id: doc.id,
+                        nome: data.NO_CURSO || 'N/A',
+                        ies: data.NO_IES || 'N/A',
+                        uf: data.SG_UF_IES || 'N/A',
+                        media: data.media_geral || 0,
+                        avaliacoes: data.qtd_avaliacoes || 0,
+                        area: data.NO_CINE_AREA_GERAL || 'N/A',
+                        grau: data.TP_GRAU_ACADEMICO || 'N/A',
+                        tipo: data.IN_GRATUITO ? 'Pública' : 'Privada'
                     };
                 });
-
-                // 5. Sort the combined list
-                summarized.sort((a, b) => {
-                    if (b.rating !== a.rating) {
-                        return b.rating - a.rating;
-                    }
-                    return b.reviewCount - a.reviewCount;
-                });
-                
-                setAllCourses(summarized);
-                setFilteredCourses(summarized);
-
-            } catch (err) {
-                console.error("Error fetching rankings: ", err);
-                setError("Não foi possível carregar os rankings. Tente novamente mais tarde.");
-            } finally {
-                setIsLoading(false);
+                setCourses(coursesData);
+            } catch (error) {
+                console.error("Error fetching courses: ", error);
             }
+            setLoading(false);
         };
-
-        fetchRankings();
+        fetchCourses();
     }, []);
-
-    useEffect(() => {
-        let updatedCourses = [...allCourses];
-
-        if (filterGratis !== null) {
-            updatedCourses = updatedCourses.filter(c => c.isFree === filterGratis);
-        }
-        if (filterUF) {
-            updatedCourses = updatedCourses.filter(c => c.uf === filterUF);
-        }
-        if (filterArea) {
-            updatedCourses = updatedCourses.filter(c => c.area === filterArea);
-        }
-        if (filterGrau) {
-            updatedCourses = updatedCourses.filter(c => String(c.degree) === filterGrau);
-        }
-        if (searchTerm) {
-            const lowercasedTerm = searchTerm.toLowerCase();
-            updatedCourses = updatedCourses.filter(c =>
-                c.course.toLowerCase().includes(lowercasedTerm) ||
-                c.university.toLowerCase().includes(lowercasedTerm)
-            );
-        }
-
-        setFilteredCourses(updatedCourses);
-    }, [filterArea, filterGratis, filterGrau, filterUF, searchTerm, allCourses]);
     
-    const ufs = [...new Set(allCourses.map(c => c.uf))].sort();
-    const areas = [...new Set(allCourses.map(c => c.area))].sort();
-    const degrees = [...new Set(allCourses.map(c => c.degree))].sort();
+    const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+        setCurrentPage(1);
+    };
 
+    const filteredAndSortedCourses = useMemo(() => {
+        let result = courses.filter(course => {
+            return (filters.uf === 'all' || course.uf === filters.uf) &&
+                   (filters.area === 'all' || course.area === filters.area) &&
+                   (filters.grau === 'all' || course.grau === filters.grau) &&
+                   (filters.tipo === 'all' || course.tipo === filters.tipo);
+        });
+
+        result.sort((a, b) => {
+            switch (sortBy) {
+                case 'avaliacoes':
+                    return b.avaliacoes - a.avaliacoes;
+                case 'alfabetica':
+                    return a.nome.localeCompare(b.nome);
+                case 'media':
+                default:
+                    return b.media - a.media;
+            }
+        });
+        return result;
+    }, [courses, filters, sortBy]);
+    
+    const paginatedCourses = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredAndSortedCourses.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [currentPage, filteredAndSortedCourses]);
+
+    const totalPages = Math.ceil(filteredAndSortedCourses.length / ITEMS_PER_PAGE);
+
+    const FilterSelect: React.FC<{name: string, label: string, options: {value: string, label: string}[]}> = ({name, label, options}) => (
+        <div>
+            <label htmlFor={name} className="block text-sm font-medium text-gray-500">{label}</label>
+            <select
+                id={name}
+                name={name}
+                onChange={handleFilterChange}
+                value={filters[name as keyof typeof filters]}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            >
+                {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+        </div>
+    );
+    
     return (
-        <div className="bg-gray-100 min-h-screen flex flex-col">
-            <div className="relative bg-gray-800 text-white">
-                <div className="relative">
-                    <Header onNavigate={onNavigate} />
-                    <div className="container mx-auto px-6 pt-24 pb-12 text-center">
-                        <h1 className="text-4xl font-bold">Ranking de Cursos</h1>
-                        <p className="text-lg text-gray-300 mt-2">Veja os cursos mais bem avaliados por estudantes como você.</p>
+        <div className="min-h-screen bg-gray-50">
+            <header className="bg-white shadow-sm sticky top-0 z-20">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                    <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onNavigate('home')}>
+                        <GridIcon className="w-8 h-8 text-gray-700" />
+                        <span className="text-2xl font-bold tracking-wider text-gray-800">AVALIAEAD</span>
                     </div>
                 </div>
-            </div>
-            
-            <main className="container mx-auto p-6 -mt-10 flex-grow">
-                <div className="bg-white rounded-lg shadow-xl p-8 max-w-6xl mx-auto">
+            </header>
 
-                    {/* Filters */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <input
-                            type="text"
-                            placeholder="Buscar por curso ou universidade..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="p-2 border rounded col-span-1 md:col-span-3"
-                        />
-                        <select value={filterUF} onChange={e => setFilterUF(e.target.value)} className="p-2 border rounded">
-                            <option value="">Todos os Estados</option>
-                            {ufs.map(uf => <option key={uf} value={uf}>{uf}</option>)}
-                        </select>
-                         <select value={filterArea} onChange={e => setFilterArea(e.target.value)} className="p-2 border rounded">
-                            <option value="">Todas as Áreas</option>
-                            {areas.map(area => <option key={area} value={area}>{area}</option>)}
-                        </select>
-                        <select value={filterGrau} onChange={e => setFilterGrau(e.target.value)} className="p-2 border rounded">
-                            <option value="">Todos os Graus</option>
-                            {degrees.map(degree => <option key={degree} value={degree}>{degree}</option>)}
-                        </select>
-                        <select onChange={e => setFilterGratis(e.target.value === '' ? null : e.target.value === 'true')} className="p-2 border rounded">
-                            <option value="">Gratuito ou Pago</option>
-                            <option value="true">Gratuito</option>
-                            <option value="false">Pago</option>
-                        </select>
-                         <button onClick={() => { setSearchTerm(''); setFilterUF(''); setFilterGratis(null); setFilterArea(''); setFilterGrau(''); }} className="p-2 bg-gray-300 rounded col-span-1 md:col-span-3">Limpar Filtros</button>
+            <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <h1 className="text-4xl font-extrabold text-gray-900 mb-8">Ranking de Cursos</h1>
+                
+                <div className="bg-white p-4 rounded-lg shadow-md mb-8 sticky top-[80px] z-10">
+                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <FilterSelect name="uf" label="UF" options={[{value: 'all', label: 'Todos'}, ...[...new Set(courses.map(c => c.uf))].sort().map(uf => ({value: uf, label: uf}))]} />
+                        <FilterSelect name="area" label="Área" options={[{value: 'all', label: 'Todas'}, ...[...new Set(courses.map(c => c.area))].sort().map(area => ({value: area, label: area}))]} />
+                        <FilterSelect name="grau" label="Grau" options={[{value: 'all', label: 'Todos'}, ...[...new Set(courses.map(c => c.grau))].sort().map(grau => ({value: grau, label: grau}))]} />
+                        <FilterSelect name="tipo" label="Tipo" options={[{value: 'all', label: 'Todos'}, ...[...new Set(courses.map(c => c.tipo))].sort().map(tipo => ({value: tipo, label: tipo}))]} />
+                        <div className="col-span-2 md:col-span-1">
+                             <label htmlFor="sortBy" className="block text-sm font-medium text-gray-500">Ordenar por</label>
+                            <select id="sortBy" name="sortBy" onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }} value={sortBy} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <option value="media">Maior nota</option>
+                                <option value="avaliacoes">Mais avaliados</option>
+                                <option value="alfabetica">Ordem alfabética</option>
+                            </select>
+                        </div>
                     </div>
+                </div>
 
-
-                    {isLoading && <p className="text-center text-gray-600">Carregando rankings...</p>}
-                    {error && <p className="text-center text-red-600">{error}</p>}
-                    {!isLoading && !error && (
-                        filteredCourses.length > 0 ? (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Curso</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Universidade</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Localização</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avaliação</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nº de Avaliações</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modalidade</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredCourses.map((course, index) => (
-                                            <tr key={course.CO_CURSO} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{index + 1}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{course.course}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.university}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{`${course.city}, ${course.uf}`}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    <div className="flex items-center">
-                                                        <StarIcon className="w-5 h-5 text-yellow-400 mr-1" />
-                                                        <span className="font-bold text-gray-800">{course.rating.toFixed(1)}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{course.reviewCount}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${course.isFree ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                                        {course.isFree ? 'Gratuito' : 'Pago'}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                {loading ? <div className="text-center">Carregando cursos...</div> : (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {paginatedCourses.map(course => (
+                            <div key={course.id} className="bg-white rounded-lg shadow-lg p-6 flex flex-col hover:shadow-xl hover:-translate-y-1 transition-transform duration-300 cursor-pointer">
+                               <div className="flex-grow">
+                                 <div className="flex justify-between items-start mb-2">
+                                    <span className="text-sm font-semibold bg-indigo-100 text-indigo-800 py-1 px-3 rounded-full">{course.uf}</span>
+                                    <div className="flex items-center">
+                                        <span className="text-xl font-bold text-amber-500 mr-1">{course.media.toFixed(1)}</span>
+                                        <StarIcon className="w-5 h-5" fill="#FBBF24" />
+                                    </div>
+                                 </div>
+                                 <h3 className="text-xl font-bold text-gray-900 mb-1">{course.nome}</h3>
+                                 <p className="text-gray-600 text-sm mb-4">{course.ies}</p>
+                               </div>
+                               <div className="text-xs text-gray-500 border-t pt-3 mt-4">
+                                 {course.avaliacoes} avaliações
+                               </div>
                             </div>
-                        ) : (
-                           <p className="text-center text-gray-600">Nenhuma avaliação encontrada para gerar o ranking.</p>
-                        )
+                        ))}
+                    </div>
+                    
+                     {paginatedCourses.length === 0 && <p className="text-center text-gray-500 col-span-full">Nenhum curso encontrado com os filtros selecionados.</p>}
+    
+                    {totalPages > 1 && (
+                        <div className="mt-12 flex justify-center items-center space-x-4">
+                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Anterior
+                            </button>
+                            <span className="text-sm text-gray-700">
+                                Página {currentPage} de {totalPages}
+                            </span>
+                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Próxima
+                            </button>
+                        </div>
                     )}
-                </div>
+                 </>
+                )}
             </main>
-
-            <Footer />
         </div>
     );
 };

@@ -1,52 +1,54 @@
-
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { auth } from '../firebase';
+import GridIcon from './icons/GridIcon';
 
-const Header: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
-  const { currentUser } = useAuth();
+interface HeaderProps {
+  onNavigate: (page: string) => void;
+  isLoggedIn: boolean;
+  onLogout: () => void;
+  isAdmin: boolean;
+}
 
-  const handleLogout = () => {
-    auth.signOut().catch((error) => console.error("Logout failed", error));
+const Header: React.FC<HeaderProps> = ({ onNavigate, isLoggedIn, onLogout, isAdmin }) => {
+  const handleReviewClick = () => {
+    if (isLoggedIn) {
+      onNavigate('review');
+    } else {
+      onNavigate('login');
+    }
   };
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-10">
-      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onNavigate('home')}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="6" cy="12" r="2" fill="white"/>
-            <circle cx="12" cy="12" r="2" fill="white"/>
-            <circle cx="18" cy="12" r="2" fill="white"/>
-            <circle cx="6" cy="18" r="2" fill="white"/>
-            <circle cx="12" cy="18" r="2" fill="white"/>
-            <circle cx="18" cy="18" r="2" fill="white"/>
-            <circle cx="6" cy="6" r="2" fill="white"/>
-            <circle cx="12" cy="6" r="2" fill="white"/>
-          </svg>
-          <span className="font-extrabold text-xl tracking-wider text-white">AVALIA<span className="font-light">EAD</span></span>
+    <header className="w-full p-6">
+      <div className="container mx-auto flex justify-between items-center">
+        <div 
+          className="flex items-center space-x-2 cursor-pointer"
+          onClick={() => onNavigate('home')}
+          aria-label="Página inicial"
+        >
+          <GridIcon className="w-8 h-8" />
+          <span className="text-2xl font-bold tracking-wider">AVALIAEAD</span>
         </div>
-        <nav className="hidden md:flex items-center space-x-8 text-white font-semibold">
-          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('ranking'); }} className="hover:text-gray-200">Rankings</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('review'); }} className="hover:text-gray-200">Deixar uma avaliação</a>
+        <nav className="hidden md:flex items-center space-x-8 text-lg">
+          <button onClick={() => onNavigate('ranking')} className="hover:text-gray-300 transition-colors">Rankings</button>
+          <button onClick={handleReviewClick} className="hover:text-gray-300 transition-colors">Deixar uma avaliação</button>
+          {isAdmin && (
+             <button onClick={() => onNavigate('admin')} className="hover:text-gray-300 transition-colors">Admin</button>
+          )}
         </nav>
-        <div>
-          {currentUser ? (
-            <div className="flex items-center space-x-4">
-              <span className="text-white hidden sm:block">{currentUser.displayName || currentUser.email}</span>
-              <button 
-                onClick={handleLogout}
-                className="bg-white text-brand-red font-bold py-2 px-4 rounded-md hover:bg-gray-200 transition-colors text-sm"
-              >
-                Sair
-              </button>
-            </div>
+        <div className="flex items-center">
+          {isLoggedIn ? (
+             <button 
+              onClick={onLogout}
+              className="bg-red-500 text-white px-6 py-2 rounded-md font-semibold hover:bg-red-600 transition-colors"
+            >
+              Logout
+            </button>
           ) : (
             <button 
               onClick={() => onNavigate('login')}
-              className="bg-white text-brand-red font-bold py-2 px-4 rounded-md hover:bg-gray-200 transition-colors"
+              className="bg-white text-gray-900 px-6 py-2 rounded-md font-semibold hover:bg-gray-200 transition-colors"
             >
-              Entrar
+              Login
             </button>
           )}
         </div>

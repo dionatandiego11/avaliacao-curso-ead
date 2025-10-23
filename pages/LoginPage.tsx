@@ -1,115 +1,387 @@
 
-import React, { useState } from 'react';
-import firebase from 'firebase/compat/app';
-import { auth } from '../firebase';
+import React, { useState, useEffect } from 'react';
+import GoogleIcon from '../components/icons/GoogleIcon';
+import GridIcon from '../components/icons/GridIcon';
+import { auth, db } from '../firebase';
+import { 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword 
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 
-const LoginPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+interface LoginPageProps {
+  onNavigate: (page: string) => void;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
+  const [isRegister, setIsRegister] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const handleGoogleSignIn = () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider)
-      .then(() => {
-        onNavigate('home');
-      }).catch((error) => {
-        setError(error.message);
-      });
+  // State for registration form
+  const [regForm, setRegForm] = useState({
+    fullName: '',
+    email: '',
+    ra: '',
+    uf: '',
+    municipio: '',
+    type: '',
+    university: '',
+    course: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const [options, setOptions] = useState({
+    ufs: [] as string[],
+    municipios: [] as string[],
+    universities: [] as string[],
+    courses: [] as string[],
+  });
+
+  const [loadingOptions, setLoadingOptions] = useState({
+    ufs: false,
+    municipios: false,
+    universities: false,
+    courses: false,
+  });
+
+  const handleRegFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    setRegForm(prev => {
+        const newState = { ...prev, [name]: value };
+        // Reset dependent fields when a parent field changes
+        if (name === 'uf') {
+            newState.municipio = '';
+            newState.type = '';
+            newState.university = '';
+            newState.course = '';
+            setOptions(o => ({...o, municipios: [], universities: [], courses: []}));
+        }
+        if (name === 'municipio') {
+            newState.type = '';
+            newState.university = '';
+            newState.course = '';
+            setOptions(o => ({...o, universities: [], courses: []}));
+        }
+        if (name === 'type') {
+            newState.university = '';
+            newState.course = '';
+            setOptions(o => ({...o, universities: [], courses: []}));
+        }
+        if (name === 'university') {
+            newState.course = '';
+            setOptions(o => ({...o, courses: []}));
+        }
+        return newState;
+    });
   };
 
-  const handleEmailPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-            onNavigate('home');
-        })
-        .catch((error) => {
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                setError('Email ou senha inválidos.');
-            } else {
-                setError('Ocorreu um erro ao fazer login.');
-            }
-        })
-        .finally(() => {
-            setLoading(false);
+  // Fetch UFs on mount if registering
+  useEffect(() => {
+    if (!isRegister) return;
+    const fetchUFs = async () => {
+        setLoadingOptions(prev => ({ ...prev, ufs: true }));
+        try {
+            const coursesSnapshot = await getDocs(collection(db, "cursos"));
+            // FIX: Explicitly set the generic type for `new Set` to `string` to fix type inference issue.
+            const ufs = [...new Set<string>(coursesSnapshot.docs.map(doc => doc.data().SG_UF_IES as string))].sort();
+            setOptions(prev => ({ ...prev, ufs }));
+        } catch (err) {
+            setError("Falha ao carregar a lista de estados.");
+        }
+        setLoadingOptions(prev => ({ ...prev, ufs: false }));
+    };
+    fetchUFs();
+  }, [isRegister]);
+
+  // Fetch Municipios on UF change
+  useEffect(() => {
+    if (!regForm.uf) return;
+    const fetchMunicipios = async () => {
+        setLoadingOptions(prev => ({ ...prev, municipios: true }));
+        try {
+            const q = query(collection(db, "cursos"), where("SG_UF_IES", "==", regForm.uf));
+            const querySnapshot = await getDocs(q);
+            // FIX: Explicitly set the generic type for `new Set` to `string` to fix type inference issue.
+            const municipios = [...new Set<string>(querySnapshot.docs.map(doc => doc.data().NO_MUNICIPIO_IES as string))].sort();
+            setOptions(prev => ({ ...prev, municipios }));
+        } catch (err) {
+            setError("Falha ao carregar a lista de municípios.");
+        }
+        setLoadingOptions(prev => ({ ...prev, municipios: false }));
+    };
+    fetchMunicipios();
+  }, [regForm.uf]);
+  
+  // Fetch Universities on UF, Municipio, or Type change
+  useEffect(() => {
+    if (!regForm.uf || !regForm.municipio || !regForm.type) return;
+    const fetchUniversities = async () => {
+        setLoadingOptions(prev => ({...prev, universities: true}));
+        try {
+            const isPublic = regForm.type === 'Pública';
+            const q = query(collection(db, 'cursos'),
+                where('SG_UF_IES', '==', regForm.uf),
+                where('NO_MUNICIPIO_IES', '==', regForm.municipio),
+                where('IN_GRATUITO', '==', isPublic)
+            );
+            const querySnapshot = await getDocs(q);
+            // FIX: Explicitly set the generic type for `new Set` to `string` to fix type inference issue.
+            const universities = [...new Set<string>(querySnapshot.docs.map(doc => doc.data().NO_IES as string))].sort();
+            setOptions(prev => ({ ...prev, universities }));
+        } catch(err) {
+            setError("Falha ao carregar as universidades.");
+        }
+        setLoadingOptions(prev => ({...prev, universities: false}));
+    };
+    fetchUniversities();
+  }, [regForm.uf, regForm.municipio, regForm.type]);
+  
+    // Fetch Courses on University change
+  useEffect(() => {
+    if (!regForm.university) return;
+    const fetchCourses = async () => {
+        setLoadingOptions(prev => ({...prev, courses: true}));
+        try {
+            const isPublic = regForm.type === 'Pública';
+            const q = query(collection(db, 'cursos'),
+                where('NO_IES', '==', regForm.university),
+                where('SG_UF_IES', '==', regForm.uf),
+                where('NO_MUNICIPIO_IES', '==', regForm.municipio),
+                where('IN_GRATUITO', '==', isPublic)
+            );
+            const querySnapshot = await getDocs(q);
+            // FIX: Explicitly set the generic type for `new Set` to `string` to fix type inference issue.
+            const courses = [...new Set<string>(querySnapshot.docs.map(doc => doc.data().NO_CURSO as string))].sort();
+            setOptions(prev => ({...prev, courses }));
+        } catch(err) {
+            setError("Falha ao carregar os cursos.");
+        }
+        setLoadingOptions(prev => ({...prev, courses: false}));
+    };
+    fetchCourses();
+  }, [regForm.university, regForm.uf, regForm.municipio, regForm.type]);
+
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      setError(null);
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const userDocRef = doc(db, 'usuarios', user.uid);
+      const docSnap = await getDoc(userDocRef);
+
+      if (!docSnap.exists()) {
+        await setDoc(userDocRef, {
+          nome: user.displayName,
+          email: user.email,
+          data_cadastro: new Date(),
+          tipo_usuario: 'aluno',
+          login_google: true,
+          ra: '', curso: '', uf: '', municipio: '', publica_privada: '', grau: '', area: ''
         });
+      }
+      onNavigate('home');
+    } catch (error: any) {
+      setError(error.message);
+    }
   };
+  
+  const handleEmailPasswordSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setError(null);
+      const formData = new FormData(e.currentTarget);
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
+      try {
+          await signInWithEmailAndPassword(auth, email, password);
+          onNavigate('home');
+      } catch (error: any) {
+          setError('Falha ao entrar. Verifique seu email e senha.');
+      }
+  };
+  
+  const handleEmailPasswordRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setError(null);
+
+      if (regForm.password !== regForm.confirmPassword) {
+          setError('As senhas não coincidem.');
+          return;
+      }
+      
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, regForm.email, regForm.password);
+        const user = userCredential.user;
+        
+        await setDoc(doc(db, 'usuarios', user.uid), {
+            nome: regForm.fullName,
+            email: user.email,
+            ra: regForm.ra,
+            curso: regForm.course,
+            uf: regForm.uf,
+            municipio: regForm.municipio,
+            publica_privada: regForm.type,
+            grau: '', // Should be derived from course
+            area: '', // Should be derived from course
+            data_cadastro: new Date(),
+            tipo_usuario: 'aluno',
+            login_google: false,
+        });
+        
+        onNavigate('home');
+
+      } catch (error: any) {
+          setError('Falha ao cadastrar. O email pode já estar em uso.');
+      }
+  };
+
+
+  const renderLoginInput = (id: string, label: string, type = 'text') => (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700">{label}</label>
+      <input
+        type={type}
+        id={id}
+        name={id}
+        className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+        required
+      />
+    </div>
+  );
+
+  const loginForm = (
+    <form className="space-y-6" onSubmit={handleEmailPasswordSignIn}>
+      {renderLoginInput('email', 'Email', 'email')}
+      {renderLoginInput('password', 'Senha', 'password')}
+       <div className="flex items-center justify-between">
+        <div className="text-sm">
+          <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Esqueceu sua senha?
+          </a>
+        </div>
+      </div>
+      <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        Entrar
+      </button>
+    </form>
+  );
+  
+  const renderRegInput = (id: keyof typeof regForm, label: string, type = 'text') => (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700">{label}</label>
+      <input
+        type={type}
+        id={id}
+        name={id}
+        value={regForm[id]}
+        onChange={handleRegFormChange}
+        className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+        required
+      />
+    </div>
+  );
+  
+  const renderRegSelect = (id: keyof typeof regForm, label: string, options: string[], disabled: boolean, loading: boolean) => (
+    <div>
+       <label htmlFor={id} className="block text-sm font-medium text-gray-700">{label}</label>
+       <select
+          id={id}
+          name={id}
+          value={regForm[id]}
+          onChange={handleRegFormChange}
+          disabled={disabled || loading}
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md disabled:bg-gray-200 disabled:cursor-not-allowed"
+          required
+        >
+         <option value="">{loading ? 'Carregando...' : `Selecione`}</option>
+         {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+       </select>
+    </div>
+  );
+
+  const registerForm = (
+    <form className="space-y-4" onSubmit={handleEmailPasswordRegister}>
+      {renderRegInput('fullName', 'Nome completo')}
+      {renderRegInput('email', 'Email', 'email')}
+      {renderRegInput('ra', 'R.A. (Registro Acadêmico)')}
+      
+      {renderRegSelect('uf', 'Estado (UF)', options.ufs, loadingOptions.ufs, loadingOptions.ufs)}
+      {renderRegSelect('municipio', 'Município', options.municipios, !regForm.uf || loadingOptions.municipios, loadingOptions.municipios)}
+      {renderRegSelect('type', 'Tipo de Instituição', ['Pública', 'Privada'], !regForm.municipio, false)}
+      {renderRegSelect('university', 'Universidade', options.universities, !regForm.type || loadingOptions.universities, loadingOptions.universities)}
+      {renderRegSelect('course', 'Curso', options.courses, !regForm.university || loadingOptions.courses, loadingOptions.courses)}
+
+      {renderRegInput('password', 'Senha', 'password')}
+      {renderRegInput('confirmPassword', 'Confirmar Senha', 'password')}
+
+       <div className="text-xs text-gray-500">
+         <p>Grau e Área serão preenchidos automaticamente conforme o curso.</p>
+      </div>
+      <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        Cadastrar
+      </button>
+    </form>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
-        <div className="flex justify-center mb-6">
-          <span className="font-extrabold text-2xl tracking-wider text-gray-800">AVALIA<span className="font-light">EAD</span></span>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+         <div 
+           className="flex items-center justify-center space-x-2 cursor-pointer"
+           onClick={() => onNavigate('home')}
+           aria-label="Voltar para a página inicial"
+         >
+          <GridIcon className="w-8 h-8 text-gray-700" />
+          <span className="text-2xl font-bold tracking-wider text-gray-800">AVALIAEAD</span>
         </div>
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Entrar na sua conta</h2>
-        <p className="text-center text-gray-500 mb-6">Bem-vindo de volta!</p>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          {isRegister ? 'Crie sua conta' : 'Acesse sua conta'}
+        </h2>
+      </div>
 
-        {error && <p className="bg-red-100 text-red-700 p-3 rounded-md mb-4 text-sm">{error}</p>}
-        
-        <form onSubmit={handleEmailPassword}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-              Email
-            </label>
-            <input 
-              type="email" 
-              id="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu@email.com" 
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              required
-            />
-          </div>
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow-xl sm:rounded-lg sm:px-10">
+          {error && <div className="mb-4 text-center text-sm text-red-600 bg-red-100 p-2 rounded-md">{error}</div>}
           <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-              Senha
-            </label>
-            <input 
-              type="password" 
-              id="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="********" 
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
-              required
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="bg-brand-red hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full disabled:bg-gray-400"
-            >
-              {loading ? 'Entrando...' : 'Entrar'}
+            <button onClick={handleGoogleSignIn} type="button" className="w-full inline-flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+              <GoogleIcon className="w-5 h-5 mr-2" />
+              {isRegister ? 'Cadastrar com Google' : 'Entrar com Google'}
             </button>
           </div>
-        </form>
-        
-        <div className="my-4 flex items-center before:flex-1 before:border-t before:border-gray-300 before:mt-0.5 after:flex-1 after:border-t after:border-gray-300 after:mt-0.5">
-          <p className="text-center font-semibold mx-4 mb-0 text-gray-500">OU</p>
+          
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">ou continue com</span>
+            </div>
+          </div>
+          
+          <div className="flex justify-center border-b border-gray-200 mb-6">
+            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+               <button
+                  onClick={() => setIsRegister(false)}
+                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${!isRegister ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                >
+                  Entrar
+                </button>
+                <button
+                  onClick={() => setIsRegister(true)}
+                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${isRegister ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                >
+                  Cadastrar
+                </button>
+            </nav>
+          </div>
+            {isRegister ? registerForm : loginForm}
         </div>
-
-        <button 
-          onClick={handleGoogleSignIn}
-          className="w-full flex items-center justify-center bg-white border border-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-50 transition-colors"
-        >
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" className="w-5 h-5 mr-2"/>
-          Continuar com Google
-        </button>
-
-        <p className="text-center text-sm text-gray-600 mt-6">
-          Não tem uma conta?
-          <button onClick={() => onNavigate('register')} className="font-bold text-brand-red hover:text-red-700 ml-1">
-            Registre-se
-          </button>
-        </p>
       </div>
-       <button onClick={() => onNavigate('home')} className="mt-4 text-gray-600 hover:text-gray-800 text-sm">Voltar para a página inicial</button>
     </div>
   );
 };
