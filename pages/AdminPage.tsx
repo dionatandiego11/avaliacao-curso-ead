@@ -25,7 +25,7 @@ interface User {
     id: string;
     nome: string;
     email: string;
-    tipo: 'admin' | 'aluno';
+    tipo_usuario: 'admin' | 'aluno';
 }
 interface Course {
     id: string;
@@ -54,7 +54,15 @@ const AdminPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
     setLoading(true);
     // Fetch Users
     const usersSnapshot = await getDocs(collection(db, "usuarios"));
-    const usersList = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+    const usersList = usersSnapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+            id: docSnap.id,
+            nome: (data.nome as string) || 'Usuário',
+            email: (data.email as string) || '',
+            tipo_usuario: (data.tipo_usuario as 'admin' | 'aluno') || 'aluno',
+        };
+    });
     setUsers(usersList);
     
     // Fetch Courses
@@ -70,13 +78,17 @@ const AdminPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
     // Fetch Reviews (latest 10 for performance)
     const reviewsQuery = query(collectionGroup(db, 'avaliacoes'), orderBy('data_avaliacao', 'desc'), limit(10));
     const reviewsSnapshot = await getDocs(reviewsQuery);
-    const reviewsList = reviewsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      courseId: doc.ref.parent.parent!.id,
-      aluno: doc.data().nome_aluno,
-      curso: doc.data().curso,
-      nota: doc.data().nota_final.toFixed(1),
-    } as Review));
+    const reviewsList = reviewsSnapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      const notaValue = Number(data.nota_final);
+      return {
+        id: docSnap.id,
+        courseId: docSnap.ref.parent.parent!.id,
+        aluno: data.nome_aluno as string,
+        curso: data.curso as string,
+        nota: Number.isFinite(notaValue) ? notaValue.toFixed(1) : '0.0',
+      } as Review;
+    });
     setReviews(reviewsList);
     
     // Calculate Metrics
@@ -117,12 +129,12 @@ const AdminPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
   };
   
   const toggleAdmin = async (user: User) => {
-      const newType = user.tipo === 'admin' ? 'aluno' : 'admin';
+      const newType = user.tipo_usuario === 'admin' ? 'aluno' : 'admin';
       if (window.confirm(`Tem certeza que deseja alterar o tipo de ${user.nome} para ${newType}?`)) {
         try {
             const userRef = doc(db, 'usuarios', user.id);
             await updateDoc(userRef, { tipo_usuario: newType });
-            setUsers(users.map(u => u.id === user.id ? {...u, tipo: newType } : u));
+            setUsers(users.map(u => u.id === user.id ? {...u, tipo_usuario: newType } : u));
         } catch(e) {
             console.error(e);
             alert('Falha ao atualizar o tipo do usuário.');
@@ -232,8 +244,8 @@ const AdminPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
                                     <td className="px-6 py-4 font-medium text-gray-900">{user.nome}</td>
                                     <td className="px-6 py-4">{user.email}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${user.tipo === 'admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                                            {user.tipo}
+                                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${user.tipo_usuario === 'admin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                                            {user.tipo_usuario}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">

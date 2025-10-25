@@ -14,6 +14,8 @@ interface AppUser {
   email: string | null;
   ra: string;
   curso: string;
+  cursoId: string;
+  universidade: string;
   // Fix: Renamed 'uf' to 'estado' to match the prop type expected by ReviewPage.
   estado: string;
   municipio: string;
@@ -45,6 +47,8 @@ const App: React.FC = () => {
             isAdmin: userData.tipo_usuario === 'admin',
             ra: userData.ra || '',
             curso: userData.curso || '',
+            cursoId: userData.cursoId || '',
+            universidade: userData.universidade || '',
             // Fix: Populated 'estado' from the 'uf' field in Firestore to resolve the type mismatch.
             estado: userData.uf || '',
             municipio: userData.municipio || '',

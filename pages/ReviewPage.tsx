@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import GridIcon from '../components/icons/GridIcon';
 import StarRating from '../components/StarRating';
 import { db } from '../firebase';
-import { doc, runTransaction, collection, addDoc, serverTimestamp, where, query, getDocs } from 'firebase/firestore';
+import { doc, runTransaction, collection, serverTimestamp, where, query, getDocs, getDoc, updateDoc } from 'firebase/firestore';
 
 interface AppUser {
   uid: string;
@@ -14,6 +14,8 @@ interface AppUser {
   grau: string;
   area: string;
   curso: string;
+  cursoId: string;
+  universidade: string;
 }
 
 interface ReviewPageProps {
@@ -61,39 +63,65 @@ const ReviewPage: React.FC<ReviewPageProps> = ({ onNavigate, user }) => {
     setIsSubmitting(true);
 
     try {
-      // Find the course document ID by its name (NO_CURSO)
-      const coursesRef = collection(db, "cursos");
-      const q = query(coursesRef, where("NO_CURSO", "==", user.curso));
-      const querySnapshot = await getDocs(q);
+      let courseRef = user.cursoId ? doc(db, 'cursos', user.cursoId) : null;
+      let courseSnapshot = courseRef ? await getDoc(courseRef) : null;
 
-      if (querySnapshot.empty) {
-        throw new Error(`Curso "${user.curso}" não encontrado no banco de dados.`);
+      if (!courseSnapshot || !courseSnapshot.exists()) {
+        const constraints = [where('NO_CURSO', '==', user.curso)];
+        if (user.universidade) {
+          constraints.push(where('NO_IES', '==', user.universidade));
+        }
+        const coursesRef = collection(db, 'cursos');
+        const q = query(coursesRef, ...constraints);
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          throw new Error(`Curso "${user.curso}" não encontrado. Atualize seu cadastro ou tente novamente mais tarde.`);
+        }
+
+        const matchedCourse = querySnapshot.docs[0];
+        courseRef = matchedCourse.ref;
+        courseSnapshot = matchedCourse;
+
+        try {
+          await updateDoc(doc(db, 'usuarios', user.uid), {
+            cursoId: matchedCourse.id,
+            curso: matchedCourse.data().NO_CURSO || user.curso,
+            universidade: matchedCourse.data().NO_IES || user.universidade || '',
+            grau: matchedCourse.data().TP_GRAU_ACADEMICO || user.grau || '',
+            area: matchedCourse.data().NO_CINE_AREA_GERAL || user.area || '',
+          });
+        } catch (updateError) {
+          console.warn('Não foi possível sincronizar o curso com o perfil do usuário.', updateError);
+        }
       }
 
-      const courseDoc = querySnapshot.docs[0];
-      const courseRef = doc(db, 'cursos', courseDoc.id);
+      if (!courseRef || !courseSnapshot) {
+        throw new Error('Não foi possível localizar o curso selecionado.');
+      }
 
-      // Run a transaction to update the course average and add the new review
+      const courseId = courseRef.id;
+
       await runTransaction(db, async (transaction) => {
-        const sfDoc = await transaction.get(courseRef);
+        const sfDoc = await transaction.get(courseRef!);
         if (!sfDoc.exists()) {
-          throw "Course document does not exist!";
+          throw new Error('Course document does not exist!');
         }
 
         const courseData = sfDoc.data();
-        const oldAvg = courseData.media_geral || 0;
-        const oldReviewCount = courseData.qtd_avaliacoes || 0;
+        const oldAvg = Number(courseData.media_geral) || 0;
+        const oldReviewCount = Number(courseData.qtd_avaliacoes) || 0;
         const newScore = parseFloat(finalScore);
 
         const newReviewCount = oldReviewCount + 1;
         const newAvg = ((oldAvg * oldReviewCount) + newScore) / newReviewCount;
 
-        transaction.update(courseRef, { 
-            media_geral: parseFloat(newAvg.toFixed(2)), 
-            qtd_avaliacoes: newReviewCount 
+        transaction.update(courseRef!, {
+            media_geral: parseFloat(newAvg.toFixed(2)),
+            qtd_avaliacoes: newReviewCount
         });
 
-        const newReviewRef = doc(collection(db, `cursos/${courseDoc.id}/avaliacoes`));
+        const newReviewRef = doc(collection(courseRef!, 'avaliacoes'));
         transaction.set(newReviewRef, {
             uid_usuario: user.uid,
             nome_aluno: user.nome,
@@ -101,9 +129,11 @@ const ReviewPage: React.FC<ReviewPageProps> = ({ onNavigate, user }) => {
             estado: user.estado,
             municipio: user.municipio,
             publica_privada: user.publica_privada,
-            grau: user.grau,
-            area: user.area,
-            curso: user.curso,
+            grau: user.grau || (courseData.TP_GRAU_ACADEMICO as string) || '',
+            area: user.area || (courseData.NO_CINE_AREA_GERAL as string) || '',
+            curso: (courseData.NO_CURSO as string) || user.curso,
+            universidade: (courseData.NO_IES as string) || user.universidade || '',
+            cursoId: courseId,
             conteudo: ratings.conteudo,
             professores: ratings.professores,
             apoio: ratings.apoio,
@@ -115,7 +145,7 @@ const ReviewPage: React.FC<ReviewPageProps> = ({ onNavigate, user }) => {
             data_avaliacao: serverTimestamp(),
         });
       });
-      
+
       alert(`Avaliação enviada com sucesso! Nota final: ${finalScore}`);
       onNavigate('home');
 
@@ -158,6 +188,7 @@ const ReviewPage: React.FC<ReviewPageProps> = ({ onNavigate, user }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-gray-700">
                     <UserInfo label="Nome" value={user.nome} />
                     <UserInfo label="R.A." value={user.ra} />
+                    <UserInfo label="Universidade" value={user.universidade} />
                     <UserInfo label="Estado" value={user.estado} />
                     <UserInfo label="Município" value={user.municipio} />
                     <UserInfo label="Tipo de IES" value={user.publica_privada} />
