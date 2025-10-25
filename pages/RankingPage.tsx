@@ -3,6 +3,7 @@ import GridIcon from '../components/icons/GridIcon';
 import StarIcon from '../components/icons/StarIcon';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { COURSES_COLLECTION } from '../utils/constants';
 import { getInstitutionTypeLabel } from '../utils/firestoreUtils';
 
 interface RankingPageProps {
@@ -39,7 +40,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ onNavigate }) => {
         const fetchCourses = async () => {
             setLoading(true);
             try {
-                const querySnapshot = await getDocs(collection(db, "cursos"));
+                const querySnapshot = await getDocs(collection(db, COURSES_COLLECTION));
                 const coursesData = querySnapshot.docs.map(doc => {
                     const data = doc.data();
                     return {

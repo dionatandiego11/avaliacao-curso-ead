@@ -3,6 +3,7 @@ import GridIcon from '../components/icons/GridIcon';
 import StarRating from '../components/StarRating';
 import { db } from '../firebase';
 import { doc, runTransaction, collection, serverTimestamp, where, query, getDocs, getDoc, updateDoc } from 'firebase/firestore';
+import { COURSES_COLLECTION } from '../utils/constants';
 
 interface AppUser {
   uid: string;
@@ -63,7 +64,7 @@ const ReviewPage: React.FC<ReviewPageProps> = ({ onNavigate, user }) => {
     setIsSubmitting(true);
 
     try {
-      let courseRef = user.cursoId ? doc(db, 'cursos', user.cursoId) : null;
+      let courseRef = user.cursoId ? doc(db, COURSES_COLLECTION, user.cursoId) : null;
       let courseSnapshot = courseRef ? await getDoc(courseRef) : null;
 
       if (!courseSnapshot || !courseSnapshot.exists()) {
@@ -71,7 +72,7 @@ const ReviewPage: React.FC<ReviewPageProps> = ({ onNavigate, user }) => {
         if (user.universidade) {
           constraints.push(where('NO_IES', '==', user.universidade));
         }
-        const coursesRef = collection(db, 'cursos');
+        const coursesRef = collection(db, COURSES_COLLECTION);
         const q = query(coursesRef, ...constraints);
         const querySnapshot = await getDocs(q);
 

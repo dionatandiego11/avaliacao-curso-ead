@@ -10,6 +10,7 @@ import EyeOffIcon from '../components/icons/EyeOffIcon';
 import UserCheckIcon from '../components/icons/UserCheckIcon';
 import { db } from '../firebase';
 import { collection, getDocs, doc, deleteDoc, updateDoc, query, orderBy, limit, collectionGroup } from 'firebase/firestore';
+import { COURSES_COLLECTION } from '../utils/constants';
 
 
 type AdminSection = 'metrics' | 'reviews' | 'courses' | 'users';
@@ -66,7 +67,7 @@ const AdminPage: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
     setUsers(usersList);
     
     // Fetch Courses
-    const coursesSnapshot = await getDocs(collection(db, "cursos"));
+    const coursesSnapshot = await getDocs(collection(db, COURSES_COLLECTION));
     const coursesList = coursesSnapshot.docs.map(doc => ({
         id: doc.id,
         nome: doc.data().NO_CURSO,

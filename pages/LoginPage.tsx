@@ -10,6 +10,7 @@ import {
   signInWithEmailAndPassword
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { COURSES_COLLECTION } from '../utils/constants';
 import { matchesInstitutionType } from '../utils/firestoreUtils';
 
 interface CourseOption {
@@ -97,7 +98,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     const fetchUFs = async () => {
         setLoadingOptions(prev => ({ ...prev, ufs: true }));
         try {
-            const coursesSnapshot = await getDocs(collection(db, "cursos"));
+            const coursesSnapshot = await getDocs(collection(db, COURSES_COLLECTION));
             // FIX: Explicitly set the generic type for `new Set` to `string` to fix type inference issue.
             const ufs = [...new Set<string>(coursesSnapshot.docs.map(doc => doc.data().SG_UF_IES as string))].sort();
             setOptions(prev => ({ ...prev, ufs }));
@@ -115,7 +116,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     const fetchMunicipios = async () => {
         setLoadingOptions(prev => ({ ...prev, municipios: true }));
         try {
-            const q = query(collection(db, "cursos"), where("SG_UF_IES", "==", regForm.uf));
+            const q = query(collection(db, COURSES_COLLECTION), where("SG_UF_IES", "==", regForm.uf));
             const querySnapshot = await getDocs(q);
             // FIX: Explicitly set the generic type for `new Set` to `string` to fix type inference issue.
             const municipios = [...new Set<string>(querySnapshot.docs.map(doc => doc.data().NO_MUNICIPIO_IES as string))].sort();
@@ -134,7 +135,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     const fetchUniversities = async () => {
         setLoadingOptions(prev => ({...prev, universities: true}));
         try {
-            const baseQuery = query(collection(db, 'cursos'),
+            const baseQuery = query(collection(db, COURSES_COLLECTION),
                 where('SG_UF_IES', '==', regForm.uf),
                 where('NO_MUNICIPIO_IES', '==', regForm.municipio)
             );
@@ -158,7 +159,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     const fetchCourses = async () => {
         setLoadingOptions(prev => ({...prev, courses: true}));
         try {
-            const baseQuery = query(collection(db, 'cursos'),
+            const baseQuery = query(collection(db, COURSES_COLLECTION),
                 where('NO_IES', '==', regForm.university),
                 where('SG_UF_IES', '==', regForm.uf),
                 where('NO_MUNICIPIO_IES', '==', regForm.municipio)
