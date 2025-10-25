@@ -3,6 +3,7 @@ import GridIcon from '../components/icons/GridIcon';
 import StarIcon from '../components/icons/StarIcon';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { getInstitutionTypeLabel } from '../utils/firestoreUtils';
 
 interface RankingPageProps {
   onNavigate: (page: string) => void;
@@ -50,7 +51,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ onNavigate }) => {
                         avaliacoes: data.qtd_avaliacoes || 0,
                         area: data.NO_CINE_AREA_GERAL || 'N/A',
                         grau: data.TP_GRAU_ACADEMICO || 'N/A',
-                        tipo: data.IN_GRATUITO ? 'Pública' : 'Privada'
+                        tipo: getInstitutionTypeLabel(data.IN_GRATUITO)
                     };
                 });
                 setCourses(coursesData);
