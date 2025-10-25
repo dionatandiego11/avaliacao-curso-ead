@@ -3,13 +3,21 @@ import React, { useState, useEffect } from 'react';
 import GoogleIcon from '../components/icons/GoogleIcon';
 import GridIcon from '../components/icons/GridIcon';
 import { auth, db } from '../firebase';
-import { 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword 
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { matchesInstitutionType } from '../utils/firestoreUtils';
+
+interface CourseOption {
+  id: string;
+  name: string;
+  area: string;
+  grau: string;
+}
 
 interface LoginPageProps {
   onNavigate: (page: string) => void;
@@ -28,7 +36,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     municipio: '',
     type: '',
     university: '',
-    course: '',
+    courseId: '',
     password: '',
     confirmPassword: '',
   });
@@ -37,8 +45,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     ufs: [] as string[],
     municipios: [] as string[],
     universities: [] as string[],
-    courses: [] as string[],
   });
+
+  const [courseOptions, setCourseOptions] = useState<CourseOption[]>([]);
 
   const [loadingOptions, setLoadingOptions] = useState({
     ufs: false,
@@ -57,23 +66,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
             newState.municipio = '';
             newState.type = '';
             newState.university = '';
-            newState.course = '';
-            setOptions(o => ({...o, municipios: [], universities: [], courses: []}));
+            newState.courseId = '';
+            setOptions(o => ({...o, municipios: [], universities: []}));
+            setCourseOptions([]);
         }
         if (name === 'municipio') {
             newState.type = '';
             newState.university = '';
-            newState.course = '';
-            setOptions(o => ({...o, universities: [], courses: []}));
+            newState.courseId = '';
+            setOptions(o => ({...o, universities: []}));
+            setCourseOptions([]);
         }
         if (name === 'type') {
             newState.university = '';
-            newState.course = '';
-            setOptions(o => ({...o, universities: [], courses: []}));
+            newState.courseId = '';
+            setOptions(o => ({...o, universities: []}));
+            setCourseOptions([]);
         }
         if (name === 'university') {
-            newState.course = '';
-            setOptions(o => ({...o, courses: []}));
+            newState.courseId = '';
+            setCourseOptions([]);
         }
         return newState;
     });
@@ -122,15 +134,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     const fetchUniversities = async () => {
         setLoadingOptions(prev => ({...prev, universities: true}));
         try {
-            const isPublic = regForm.type === 'Pública';
-            const q = query(collection(db, 'cursos'),
+            const baseQuery = query(collection(db, 'cursos'),
                 where('SG_UF_IES', '==', regForm.uf),
-                where('NO_MUNICIPIO_IES', '==', regForm.municipio),
-                where('IN_GRATUITO', '==', isPublic)
+                where('NO_MUNICIPIO_IES', '==', regForm.municipio)
             );
-            const querySnapshot = await getDocs(q);
-            // FIX: Explicitly set the generic type for `new Set` to `string` to fix type inference issue.
-            const universities = [...new Set<string>(querySnapshot.docs.map(doc => doc.data().NO_IES as string))].sort();
+            const querySnapshot = await getDocs(baseQuery);
+            const filteredDocs = querySnapshot.docs.filter(docSnap =>
+                matchesInstitutionType(docSnap.data().IN_GRATUITO, regForm.type as 'Pública' | 'Privada')
+            );
+            const universities = [...new Set<string>(filteredDocs.map(doc => doc.data().NO_IES as string))].sort();
             setOptions(prev => ({ ...prev, universities }));
         } catch(err) {
             setError("Falha ao carregar as universidades.");
@@ -146,17 +158,27 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     const fetchCourses = async () => {
         setLoadingOptions(prev => ({...prev, courses: true}));
         try {
-            const isPublic = regForm.type === 'Pública';
-            const q = query(collection(db, 'cursos'),
+            const baseQuery = query(collection(db, 'cursos'),
                 where('NO_IES', '==', regForm.university),
                 where('SG_UF_IES', '==', regForm.uf),
-                where('NO_MUNICIPIO_IES', '==', regForm.municipio),
-                where('IN_GRATUITO', '==', isPublic)
+                where('NO_MUNICIPIO_IES', '==', regForm.municipio)
             );
-            const querySnapshot = await getDocs(q);
-            // FIX: Explicitly set the generic type for `new Set` to `string` to fix type inference issue.
-            const courses = [...new Set<string>(querySnapshot.docs.map(doc => doc.data().NO_CURSO as string))].sort();
-            setOptions(prev => ({...prev, courses }));
+            const querySnapshot = await getDocs(baseQuery);
+            const filteredDocs = querySnapshot.docs.filter(docSnap =>
+                matchesInstitutionType(docSnap.data().IN_GRATUITO, regForm.type as 'Pública' | 'Privada')
+            );
+            const courses = filteredDocs
+                .map(docSnap => {
+                    const data = docSnap.data();
+                    return {
+                        id: docSnap.id,
+                        name: data.NO_CURSO as string,
+                        area: (data.NO_CINE_AREA_GERAL as string) || '',
+                        grau: (data.TP_GRAU_ACADEMICO as string) || '',
+                    } as CourseOption;
+                })
+                .sort((a, b) => a.name.localeCompare(b.name));
+            setCourseOptions(courses);
         } catch(err) {
             setError("Falha ao carregar os cursos.");
         }
@@ -182,7 +204,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
           data_cadastro: new Date(),
           tipo_usuario: 'aluno',
           login_google: true,
-          ra: '', curso: '', uf: '', municipio: '', publica_privada: '', grau: '', area: ''
+          ra: '',
+          curso: '',
+          cursoId: '',
+          universidade: '',
+          uf: '',
+          municipio: '',
+          publica_privada: '',
+          grau: '',
+          area: ''
         });
       }
       onNavigate('home');
@@ -215,24 +245,37 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
       }
       
       try {
+        if (!regForm.courseId) {
+            setError('Selecione um curso válido.');
+            return;
+        }
+
+        const selectedCourse = courseOptions.find(course => course.id === regForm.courseId);
+        if (!selectedCourse) {
+            setError('Não foi possível identificar o curso selecionado. Tente novamente.');
+            return;
+        }
+
         const userCredential = await createUserWithEmailAndPassword(auth, regForm.email, regForm.password);
         const user = userCredential.user;
-        
+
         await setDoc(doc(db, 'usuarios', user.uid), {
             nome: regForm.fullName,
             email: user.email,
             ra: regForm.ra,
-            curso: regForm.course,
+            curso: selectedCourse.name,
+            cursoId: selectedCourse.id,
+            universidade: regForm.university,
             uf: regForm.uf,
             municipio: regForm.municipio,
             publica_privada: regForm.type,
-            grau: '', // Should be derived from course
-            area: '', // Should be derived from course
+            grau: selectedCourse.grau,
+            area: selectedCourse.area,
             data_cadastro: new Date(),
             tipo_usuario: 'aluno',
             login_google: false,
         });
-        
+
         onNavigate('home');
 
       } catch (error: any) {
@@ -314,7 +357,33 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
       {renderRegSelect('municipio', 'Município', options.municipios, !regForm.uf || loadingOptions.municipios, loadingOptions.municipios)}
       {renderRegSelect('type', 'Tipo de Instituição', ['Pública', 'Privada'], !regForm.municipio, false)}
       {renderRegSelect('university', 'Universidade', options.universities, !regForm.type || loadingOptions.universities, loadingOptions.universities)}
-      {renderRegSelect('course', 'Curso', options.courses, !regForm.university || loadingOptions.courses, loadingOptions.courses)}
+      <div>
+        <label htmlFor="courseId" className="block text-sm font-medium text-gray-700">Curso</label>
+        <select
+          id="courseId"
+          name="courseId"
+          value={regForm.courseId}
+          onChange={handleRegFormChange}
+          disabled={!regForm.university || loadingOptions.courses}
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md disabled:bg-gray-200 disabled:cursor-not-allowed"
+          required
+        >
+          <option value="">{loadingOptions.courses ? 'Carregando...' : 'Selecione'}</option>
+          {courseOptions.map(course => (
+            <option key={course.id} value={course.id}>{course.name}</option>
+          ))}
+        </select>
+        {regForm.courseId && (
+          <div className="mt-2 text-xs text-gray-500">
+            {(() => {
+              const selectedCourse = courseOptions.find(course => course.id === regForm.courseId);
+              if (!selectedCourse) return null;
+              const details = [selectedCourse.grau, selectedCourse.area].filter(Boolean).join(' • ');
+              return details ? <span>{details}</span> : null;
+            })()}
+          </div>
+        )}
+      </div>
 
       {renderRegInput('password', 'Senha', 'password')}
       {renderRegInput('confirmPassword', 'Confirmar Senha', 'password')}
